@@ -46,6 +46,7 @@ module clm_instMod
   use DUSTMod                         , only : dust_type
   use EnergyFluxType                  , only : energyflux_type
   use FrictionVelocityMod             , only : frictionvel_type
+  use CLUBBmomentsType                , only : clubbmoments_type
   use GlacierSurfaceMassBalanceMod    , only : glacier_smb_type
   use InfiltrationExcessRunoffMod     , only : infiltration_excess_runoff_type
   use IrrigationMod                   , only : irrigation_type
@@ -102,6 +103,7 @@ module clm_instMod
   type(canopystate_type), public          :: canopystate_inst
   type(energyflux_type), public           :: energyflux_inst
   type(frictionvel_type), public          :: frictionvel_inst
+  type(clubbmoments_type),public          :: clubbmoments_inst
   type(glacier_smb_type), public          :: glacier_smb_inst
   type(infiltration_excess_runoff_type), public :: infiltration_excess_runoff_inst
   type(irrigation_type), public           :: irrigation_inst
@@ -310,6 +312,8 @@ contains
     call aerosol_inst%Init(bounds, NLFilename)
 
     call frictionvel_inst%Init(bounds, NLFilename = NLFilename, params_ncid = params_ncid)
+ 
+    call clubbmoments_inst%Init(bounds)
 
     call lakestate_inst%Init(bounds)
     call LakeConInit()

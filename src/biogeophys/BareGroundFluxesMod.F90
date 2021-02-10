@@ -243,6 +243,9 @@ contains
          z0qg_col               => frictionvel_inst%z0qg_col                    , & ! Output: [real(r8) (:)   ]  roughness length, latent heat [m]
          ram1                   => frictionvel_inst%ram1_patch                  , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)
          num_iter               => frictionvel_inst%num_iter_patch              , & ! Output: [real(r8) (:)   ]  number of iterations
+         ! MDF: adding zeta (used for CLUBB moments calculations)
+         zeta_patch             => frictionvel_inst%zeta_patch                  , & !Output:[real(r8) (:)   ]  dimensionless stability parameter
+
          htvp                   => energyflux_inst%htvp_col                     , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg]                      
          qflx_ev_snow           => waterfluxbulk_inst%qflx_ev_snow_patch        , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (mm H2O/s) [+ to atm]
          qflx_ev_soil           => waterfluxbulk_inst%qflx_ev_soil_patch        , & ! Output: [real(r8) (:)   ]  evaporation flux from soil (mm H2O/s) [+ to atm]
@@ -428,6 +431,9 @@ contains
               es = e_ref2m)
 
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
+ 
+         ! MDF: For CLUBB moments,  store zeta into patch level variables 
+         zeta_patch(p)  = zeta
 
          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
             rh_ref2m_r(p) = rh_ref2m(p)

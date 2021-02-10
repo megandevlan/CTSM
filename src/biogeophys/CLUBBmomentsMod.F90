@@ -15,6 +15,7 @@ module CLUBBmomentsMod
   use clm_varctl             , only : iulog
   use decompMod              , only : bounds_type
   !
+  use CLUBBMomentsType       , only : clubbmoments_type
   use FrictionvelocityMod    , only : frictionvel_type
   use EnergyFluxType         , only : energyflux_type
   use atm2lndType            , only : atm2lnd_type
@@ -42,9 +43,9 @@ module CLUBBmomentsMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine CLUBBmoments(bounds,frictionvel_inst,energyflux_inst, & 
-       atm2lnd_inst,lnd2atm_inst,waterdiagnosticbulk_inst, & 
-       temperature_inst)
+  subroutine CLUBBmoments(bounds,clubbmoments_inst,frictionvel_inst,&
+       energyflux_inst,atm2lnd_inst,lnd2atm_inst,&
+       waterdiagnosticbulk_inst,temperature_inst)
     !
     ! !DESCRIPTION:
     !
@@ -54,6 +55,7 @@ contains
     !
     ! ARGUMENTS:
     type(bounds_type)                      , intent(in)            :: bounds
+    type(clubbmoments_type)                , intent(inout)         :: clubbmoments_inst
     type(frictionvel_type)                 , intent(in)            :: frictionvel_inst
     type(energyflux_type)                  , intent(in)            :: energyflux_inst
     type(atm2lnd_type)                     , intent(in)            :: atm2lnd_inst
@@ -73,12 +75,12 @@ contains
     real(r8) :: wp2(bounds%begp:bounds%endp)             ! Vertical velocityvariance (m2/s2)
     real(r8) :: thlp2(bounds%begp:bounds%endp)           ! Temperature variance (K2)
     real(r8) :: Tv(bounds%begp:bounds%endp)              ! Virtual temperature at the surface (column=patch level)
-    real(r8) :: wp2_weighted(bounds%begg:bounds%endg)    ! FINAL OUTPUT: Gridcell weighted mean of WP2 
+    !real(r8) :: wp2_weighted(bounds%begg:bounds%endg)    ! FINAL OUTPUT: Gridcell weighted mean of WP2 
     real(r8) :: thlp2_grid(bounds%begg:bounds%endg)      ! Gridcell weighted mean of THLP2
     real(r8) :: theta_grid(bounds%begg:bounds%endg)      ! Gridcell weighted mean of THETA (Tv)
     real(r8) :: theta_sqr(bounds%begp:bounds%endp)       ! Patch level difference in THETA from grid mean 
     real(r8) :: theta_sqr_grid(bounds%begg:bounds%endg)  ! Gridcell weighted mean of patch THETA differences 
-    real(r8) :: thlp2_weighted(bounds%begg:bounds%endg)  ! FINAL OUTPUT: Gridcell weighted mean  of THLP2 
+    !real(r8) :: thlp2_weighted(bounds%begg:bounds%endg)  ! FINAL OUTPUT: Gridcell weighted mean  of THLP2 
    
 
     ! real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
@@ -88,6 +90,8 @@ contains
           if (patch%active(p)) then
 
              associate(                                                        &
+                !wp2_weighted          => clubbmoments_inst%wp2_grid          ,  &      ! Output [real(r8) (:)   ]  vertical velocity variance [m**2/s**2]
+                !thlp2_weighted        => clubbmoments_inst%thlp2_grid        ,  &      ! Output [real(r8) (:)   ]  temperature variance [K**2]  
                 ustar                 => frictionvel_inst%ustar_patch        ,  &      ! Input: [real(r8) (:)   ]  friction velocity [m/s]  
                 zeta                  => frictionvel_inst%zeta_patch         ,  &      ! Input: [real(r8) (:)   ]  dimensionless stability parameter 
                 forc_rho              => atm2lnd_inst%forc_rho_downscaled_col,  &      ! Input: [real(r8) (:)   ]  density (kg/m**3)   
@@ -156,8 +160,13 @@ contains
     ! -----------------
     call p2g(bounds, &
          wp2(bounds%begp:bounds%endp), & 
-         wp2_weighted(bounds%begg:bounds%endg), & 
+         clubbmoments_inst%wp2_grid (bounds%begg:bounds%endg), & 
          p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')    
+
+!    call p2g(bounds, &
+!         wp2(bounds%begp:bounds%endp), &
+!         wp2_weighted(bounds%begg:bounds%endg), &
+!         p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')
 
     call  p2g(bounds, & 
           thlp2(bounds%begp:bounds%endp), &
@@ -184,13 +193,13 @@ contains
           theta_sqr_grid(bounds%begg:bounds%endg), &
           p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-    thlp2_weighted(bounds%begg:bounds%endg) = thlp2_grid(bounds%begg:bounds%endg) + theta_sqr_grid(bounds%begg:bounds%endg)
+    clubbmoments_inst%thlp2_grid(bounds%begg:bounds%endg) = thlp2_grid(bounds%begg:bounds%endg) + theta_sqr_grid(bounds%begg:bounds%endg)
 
-    write(iulog,*)'MDF: Final value of wp2: ',wp2_weighted
+    write(iulog,*)'MDF: Final value of wp2: ',clubbmoments_inst%wp2_grid
     !write(iulog,*)'MDF: Grid-mean thlp2: ',thlp2_grid
     !write(iulog,*)'MDF: Grid-mean theta: ',theta_grid
     !write(iulog,*)'MDF: Grid-mean theta diff: ',theta_sqr_grid 
-    write(iulog,*)'MDF: Final value of thlp2: ',thlp2_weighted
+    write(iulog,*)'MDF: Final value of thlp2: ',clubbmoments_inst%thlp2_grid
 
     ! Save files in way that can be written out to history file 
     ! ---------------------------------------------------------

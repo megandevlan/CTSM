@@ -33,6 +33,9 @@ module clm_driver
   use UrbanTimeVarType       , only : urbantv_type
   use SoilTemperatureMod     , only : SoilTemperature
   use LakeTemperatureMod     , only : LakeTemperature
+  ! 
+  ! CLASP: New module to compute surface CLUBB moments
+  use CLUBBmomentsMod           , only : CLUBBmoments
   !
   use BareGroundFluxesMod    , only : BareGroundFluxes
   use CanopyFluxesMod        , only : CanopyFluxes
@@ -824,6 +827,14 @@ contains
             water_inst%waterstatebulk_inst, water_inst%waterdiagnosticbulk_inst, &
             energyflux_inst, water_inst%waterfluxbulk_inst)
        call t_stopf('bgp2')
+
+       ! ============================================================================
+       ! Compute higher order moments for CLUBB 
+       ! ============================================================================
+       ! CLASP: Add call to CLUBBmoments (MDF)
+       call CLUBBmoments(bounds_clump,clubbmoments_inst,frictionvel_inst,energyflux_inst, &
+            atm2lnd_inst,lnd2atm_inst,water_inst%waterdiagnosticbulk_inst, &
+            temperature_inst)
 
        ! ============================================================================
        ! Perform averaging from patch level to column level

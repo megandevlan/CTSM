@@ -232,6 +232,9 @@ contains
          zetamax          =>    frictionvel_inst%zetamaxstable         , & ! Input:  [real(r8)       ]  max zeta value under stable conditions
          ram1             =>    frictionvel_inst%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
 
+         ! MDF: adding ustar and zeta (used for CLUBB moments calculations)
+         zeta_patch       =>    frictionvel_inst%zeta_patch            , & !Output:[real(r8) (:)   ]  dimensionless stability parameter 
+
          q_ref2m          =>    waterdiagnosticbulk_inst%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
          rh_ref2m         =>    waterdiagnosticbulk_inst%rh_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
 
@@ -646,6 +649,9 @@ contains
          call QSat(t_ref2m(p), forc_pbot(c), qsat_ref2m, &
               es = e_ref2m)
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
+
+         ! MDF: For CLUBB moments,  store zeta into patch level variable
+         zeta_patch(p)  = zeta
 
          ! Human Heat Stress
   
