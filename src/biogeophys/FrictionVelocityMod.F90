@@ -55,18 +55,19 @@ module FrictionVelocityMod
      real(r8), pointer, public :: z0mg_col         (:)   ! col roughness length over ground, momentum  [m] 
      real(r8), pointer, public :: z0hg_col         (:)   ! col roughness length over ground, sensible heat [m]
      real(r8), pointer, public :: z0qg_col         (:)   ! col roughness length over ground, latent heat [m]
+     real(r8), pointer, public :: zeta_patch       (:)   ! patch dimensionless stability parameter
+     real(r8), pointer, public :: ustar_patch      (:)   ! patch friction velocity [m/s]
+     real(r8), pointer, public :: wstar_patch      (:)   ! patch convective velocity scale 
      ! variables to add history output from CanopyFluxesMod
      real(r8), pointer, public :: rah1_patch       (:)   ! patch sensible heat flux resistance [s/m]
      real(r8), pointer, public :: rah2_patch       (:)   ! patch below-canopy sensible heat flux resistance [s/m]
      real(r8), pointer, public :: raw1_patch       (:)   ! patch moisture flux resistance [s/m]
      real(r8), pointer, public :: raw2_patch       (:)   ! patch below-canopy moisture flux resistance [s/m]
-     real(r8), pointer, public :: ustar_patch      (:)   ! patch friction velocity [m/s]
      real(r8), pointer, public :: um_patch         (:)   ! patch wind speed including the stablity effect [m/s]
      real(r8), pointer, public :: uaf_patch        (:)   ! patch canopy air speed [m/s]
      real(r8), pointer, public :: taf_patch        (:)   ! patch canopy air temperature [K]
      real(r8), pointer, public :: qaf_patch        (:)   ! patch canopy humidity [kg/kg]
      real(r8), pointer, public :: obu_patch        (:)   ! patch Monin-Obukhov length [m]
-     real(r8), pointer, public :: zeta_patch       (:)   ! patch dimensionless stability parameter
      real(r8), pointer, public :: vpd_patch        (:)   ! patch vapor pressure deficit [Pa]
      real(r8), pointer, public :: num_iter_patch   (:)   ! patch number of iterations
      real(r8), pointer, public :: z0m_actual_patch (:)   ! patch roughness length actually used in flux calculations, momentum [m]
@@ -161,6 +162,7 @@ contains
     allocate(this%taf_patch        (begp:endp)) ; this%taf_patch        (:)   = nan
     allocate(this%qaf_patch        (begp:endp)) ; this%qaf_patch        (:)   = nan
     allocate(this%ustar_patch      (begp:endp)) ; this%ustar_patch      (:)   = nan
+    allocate(this%wstar_patch      (begp:endp)) ; this%wstar_patch      (:)   = nan
     allocate(this%obu_patch        (begp:endp)) ; this%obu_patch        (:)   = nan
     allocate(this%zeta_patch       (begp:endp)) ; this%zeta_patch       (:)   = nan
     allocate(this%vpd_patch        (begp:endp)) ; this%vpd_patch        (:)   = nan
@@ -278,9 +280,17 @@ contains
             avgflag='A', long_name='Monin-Obukhov length', &
             ptr_patch=this%obu_patch, default='inactive')
        this%zeta_patch(begp:endp) = spval
+       call hist_addfld1d (fname='ZETA_VEG', units='unitless', &
+            avgflag='A', long_name='dimensionless stability parameter over vegetated patches', &
+            ptr_patch=this%zeta_patch, l2g_scale_type='veg', default='inactive')
+       this%zeta_patch(begp:endp) = spval
        call hist_addfld1d (fname='ZETA', units='unitless', &
             avgflag='A', long_name='dimensionless stability parameter', &
             ptr_patch=this%zeta_patch, default='inactive')
+       this%wstar_patch(begp:endp) = spval 
+       call hist_addfld1d (fname='WSTAR', units='m/s', &
+            avgflag='A', long_name='Convective velocity scale', &
+            ptr_patch=this%wstar_patch,default='inactive')
        this%vpd_patch(begp:endp) = spval
        call hist_addfld1d (fname='VPD', units='Pa', &
             avgflag='A', long_name='vpd', &

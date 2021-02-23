@@ -296,11 +296,10 @@ contains
          zetamax             =>   frictionvel_inst%zetamaxstable            , & ! Input:  [real(r8)       ]  max zeta value under stable conditions
          ram1                =>   frictionvel_inst%ram1_patch               , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
          u10_clm             =>   frictionvel_inst%u10_clm_patch            , & ! Input:  [real(r8) (:)   ]  10 m height winds (m/s)
-   
-         ! MDF: adding ustar and zeta (used for CLUBB moments calculations)
-         ustar_patch         => frictionvel_inst%ustar_patch             , & ! Output:[real(r8) (:)   ]  friction velocity [m/s]
-         zeta_patch          => frictionvel_inst%zeta_patch              , & ! Output:[real(r8) (:)   ]  dimensionless stability parameter        
-   
+         zeta_patch          =>   frictionvel_inst%zeta_patch               , & ! Output: [real(r8) (:)   ]  dimensionless stability parameter   
+         wstar               =>   frictionvel_inst%wstar_patch              , & ! Output: [real(r8)       ]  convective velocity scale (m/s)
+         ustar_patch         =>   frictionvel_inst%ustar_patch              , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
+
          htvp                =>   energyflux_inst%htvp_col                  , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) (J/kg)  
          dlrad               =>   energyflux_inst%dlrad_patch               , & ! Output: [real(r8) (:)   ]  downward longwave radiation below the canopy (W/m**2)
          ulrad               =>   energyflux_inst%ulrad_patch               , & ! Output: [real(r8) (:)   ]  upward longwave radiation above the canopy (W/m**2)
@@ -650,7 +649,7 @@ contains
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
             g = lun%gridcell(l)
-
+ 
             dth(l) = thm_g(l)-taf(l)
             dqh(l) = forc_q(g)-qaf(l)
             tstar = temp1(l)*dth(l)
@@ -887,9 +886,10 @@ contains
          q_ref2m(p) = qaf(l)
          t_ref2m_u(p) = taf(l)
 
-         ! MDF: For CLUBB moments,  store zeta and ustar into patch level variables 
+         ! MDF: For CLUBB moments,  store zeta,ustar,and wstar into patch level variables 
          ustar_patch(p) = ustar(l)
          zeta_patch(p)  = zeta
+         wstar(p)       = wc
 
          ! 2 m height relative humidity
 

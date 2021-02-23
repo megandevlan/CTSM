@@ -158,8 +158,8 @@ contains
     real(r8) :: um(bounds%begp:bounds%endp)        ! wind speed including the stablity effect [m/s]
     real(r8) :: ur(bounds%begp:bounds%endp)        ! wind speed at reference height [m/s]
     real(r8) :: ustar(bounds%begp:bounds%endp)     ! friction velocity [m/s]
-    real(r8) :: wc                                 ! convective velocity [m/s]
-    real(r8) :: zeta                               ! dimensionless height used in Monin-Obukhov theory
+!    real(r8) :: wc                                 ! convective velocity [m/s]
+!    real(r8) :: zeta                               ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: zldis(bounds%begp:bounds%endp)     ! reference height "minus" zero displacement height [m]
     real(r8) :: displa(bounds%begp:bounds%endp)    ! displacement (always zero) [m]
     real(r8) :: z0mg(bounds%begp:bounds%endp)      ! roughness length over ground, momentum [m]
@@ -231,9 +231,8 @@ contains
          forc_hgt_q_patch =>    frictionvel_inst%forc_hgt_q_patch      , & ! Input:  [real(r8) (:)   ]  observational height of specific humidity at pft level [m]
          zetamax          =>    frictionvel_inst%zetamaxstable         , & ! Input:  [real(r8)       ]  max zeta value under stable conditions
          ram1             =>    frictionvel_inst%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
-
-         ! MDF: adding ustar and zeta (used for CLUBB moments calculations)
-         zeta_patch       =>    frictionvel_inst%zeta_patch            , & !Output:[real(r8) (:)   ]  dimensionless stability parameter 
+         zeta             =>    frictionvel_inst%zeta_patch            , & ! Output: [real(r8) (:)   ]  dimensionless stability parameter 
+         wstar            =>    frictionvel_inst%wstar_patch           , & ! Output: [real(r8)       ]  convective velocity scale [m/s]
 
          q_ref2m          =>    waterdiagnosticbulk_inst%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
          rh_ref2m         =>    waterdiagnosticbulk_inst%rh_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          
@@ -503,17 +502,17 @@ contains
             qstar = temp2(p)*dqh(p)
 
             thvstar=tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
-            zeta=zldis(p)*vkc * grav*thvstar/(ustar(p)**2*thv(c))
+            zeta(p)=zldis(p)*vkc * grav*thvstar/(ustar(p)**2*thv(c))
 
-            if (zeta >= 0._r8) then     !stable
-               zeta = min(zetamax,max(zeta,0.01_r8))
+            if (zeta(p) >= 0._r8) then     !stable
+               zeta(p) = min(zetamax,max(zeta(p),0.01_r8))
                um(p) = max(ur(p),0.1_r8)
             else                     !unstable
-               zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta1*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
-               um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               zeta(p) = max(-100._r8,min(zeta(p),-0.01_r8))
+               wstar(p) = beta1*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
+               um(p) = sqrt(ur(p)*ur(p)+wstar(p)*wstar(p))
             end if
-            obu(p) = zldis(p)/zeta
+            obu(p) = zldis(p)/zeta(p)
 
             if (obuold(p)*obu(p) < 0._r8) nmozsgn(p) = nmozsgn(p)+1
 
@@ -649,9 +648,6 @@ contains
          call QSat(t_ref2m(p), forc_pbot(c), qsat_ref2m, &
               es = e_ref2m)
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
-
-         ! MDF: For CLUBB moments,  store zeta into patch level variable
-         zeta_patch(p)  = zeta
 
          ! Human Heat Stress
   

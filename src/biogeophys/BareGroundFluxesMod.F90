@@ -114,8 +114,8 @@ contains
     integer  :: iter                             ! iteration index
     real(r8) :: zldis(bounds%begp:bounds%endp)   ! reference height "minus" zero displacement height [m]
     real(r8) :: displa(bounds%begp:bounds%endp)  ! displacement height [m]
-    real(r8) :: zeta                             ! dimensionless height used in Monin-Obukhov theory
-    real(r8) :: wc                               ! convective velocity [m/s]
+!   real(r8) :: zeta                             ! dimensionless height used in Monin-Obukhov theory
+!   real(r8) :: wc                               ! convective velocity [m/s]
     real(r8) :: dth(bounds%begp:bounds%endp)     ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv                             ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: dqh(bounds%begp:bounds%endp)     ! diff of humidity between ref. height and surface
@@ -243,8 +243,8 @@ contains
          z0qg_col               => frictionvel_inst%z0qg_col                    , & ! Output: [real(r8) (:)   ]  roughness length, latent heat [m]
          ram1                   => frictionvel_inst%ram1_patch                  , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)
          num_iter               => frictionvel_inst%num_iter_patch              , & ! Output: [real(r8) (:)   ]  number of iterations
-         ! MDF: adding zeta (used for CLUBB moments calculations)
-         zeta_patch             => frictionvel_inst%zeta_patch                  , & !Output:[real(r8) (:)   ]  dimensionless stability parameter
+         zeta                   => frictionvel_inst%zeta_patch                  , & ! Output: [real(r8) (:)   ]  dimensionless stability parameter 
+         wstar                  => frictionvel_inst%wstar_patch                 , & ! Output: [real(r8)       ]  convective velocity scale [m/s]
 
          htvp                   => energyflux_inst%htvp_col                     , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg]                      
          qflx_ev_snow           => waterfluxbulk_inst%qflx_ev_snow_patch        , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (mm H2O/s) [+ to atm]
@@ -336,17 +336,17 @@ contains
             z0hg_patch(p) = z0mg_patch(p) / exp(params_inst%a_coef * (ustar(p) * z0mg_patch(p) / 1.5e-5_r8)**params_inst%a_exp)
             z0qg_patch(p) = z0hg_patch(p)
             thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
-            zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
+            zeta(p) = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))
 
-            if (zeta >= 0._r8) then                   !stable
-               zeta = min(zetamax,max(zeta,0.01_r8))
+            if (zeta(p)  >= 0._r8) then                   !stable
+               zeta(p)  = min(zetamax,max(zeta(p) ,0.01_r8))
                um(p) = max(ur(p),0.1_r8)
             else                                      !unstable
-               zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta(c)*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
-               um(p) = sqrt(ur(p)*ur(p) + wc*wc)
+               zeta(p)  = max(-100._r8,min(zeta(p) ,-0.01_r8))
+               wstar(p) = beta(c)*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
+               um(p) = sqrt(ur(p)*ur(p) + wstar(p)*wstar(p))
             end if
-            obu(p) = zldis(p)/zeta
+            obu(p) = zldis(p)/zeta(p) 
 
             num_iter(p) = iter
          end do
@@ -432,9 +432,6 @@ contains
 
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
  
-         ! MDF: For CLUBB moments,  store zeta into patch level variables 
-         zeta_patch(p)  = zeta
-
          if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)

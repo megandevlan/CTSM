@@ -283,7 +283,7 @@ contains
 
     real(r8) :: dtime                                ! land model time step (sec)
     real(r8) :: zldis(bounds%begp:bounds%endp)       ! reference height "minus" zero displacement height [m]
-    real(r8) :: wc                                   ! convective velocity [m/s]
+!    real(r8) :: wc                                   ! convective velocity [m/s]
     real(r8) :: dth(bounds%begp:bounds%endp)         ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv(bounds%begp:bounds%endp)        ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: dqh(bounds%begp:bounds%endp)         ! diff of humidity between ref. height and surface
@@ -592,6 +592,7 @@ contains
          raw1                   => frictionvel_inst%raw1_patch                  , & ! Output: [real(r8) (:)   ]  aerodynamical  resistance [s/m]
          raw2                   => frictionvel_inst%raw2_patch                  , & ! Output: [real(r8) (:)   ]  aerodynamical resistance [s/m]
          ustar                  => frictionvel_inst%ustar_patch                 , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
+         wstar                  => frictionvel_inst%wstar_patch                 , & ! Output: [real(r8)       ]  convective velocity scale [m/s]
          um                     => frictionvel_inst%um_patch                    , & ! Output: [real(r8) (:)   ]  wind speed including the stablity effect [m/s]
          uaf                    => frictionvel_inst%uaf_patch                   , & ! Output: [real(r8) (:)   ]  canopy air speed [m/s]
          taf                    => frictionvel_inst%taf_patch                   , & ! Output: [real(r8) (:)   ]  canopy air temperature [K]
@@ -1332,8 +1333,8 @@ bioms:   do f = 1, fn
                um(p) = max(ur(p),0.1_r8)
             else                     !unstable
                zeta(p) = max(-100._r8,min(zeta(p),-0.01_r8))
-               wc = beta*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
-               um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               wstar(p) = beta*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
+               um(p) = sqrt(ur(p)*ur(p)+wstar(p)*wstar(p))
             end if
             obu(p) = zldis(p)/zeta(p)
 

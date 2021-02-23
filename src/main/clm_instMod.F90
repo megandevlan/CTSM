@@ -46,7 +46,7 @@ module clm_instMod
   use DUSTMod                         , only : dust_type
   use EnergyFluxType                  , only : energyflux_type
   use FrictionVelocityMod             , only : frictionvel_type
-  use CLUBBmomentsType                , only : clubbmoments_type
+  use CLUBBmomentsMod                 , only : clubbmoments_type
   use GlacierSurfaceMassBalanceMod    , only : glacier_smb_type
   use InfiltrationExcessRunoffMod     , only : infiltration_excess_runoff_type
   use IrrigationMod                   , only : irrigation_type
