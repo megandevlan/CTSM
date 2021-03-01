@@ -126,7 +126,7 @@ contains
     real(r8) :: temp12m(bounds%begp:bounds%endp) ! relation for potential temperature profile applied at 2-m
     real(r8) :: temp2(bounds%begp:bounds%endp)   ! relation for specific humidity profile
     real(r8) :: temp22m(bounds%begp:bounds%endp) ! relation for specific humidity profile applied at 2-m
-    real(r8) :: ustar(bounds%begp:bounds%endp)   ! friction velocity [m/s]
+!    real(r8) :: ustar(bounds%begp:bounds%endp)   ! friction velocity [m/s]
     real(r8) :: tstar                            ! temperature scaling parameter
     real(r8) :: qstar                            ! moisture scaling parameter
     real(r8) :: thvstar                          ! virtual potential temperature scaling parameter
@@ -245,6 +245,7 @@ contains
          num_iter               => frictionvel_inst%num_iter_patch              , & ! Output: [real(r8) (:)   ]  number of iterations
          zeta                   => frictionvel_inst%zeta_patch                  , & ! Output: [real(r8) (:)   ]  dimensionless stability parameter 
          wstar                  => frictionvel_inst%wstar_patch                 , & ! Output: [real(r8)       ]  convective velocity scale [m/s]
+         ustar                  => frictionvel_inst%ustar_patch                 , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
 
          htvp                   => energyflux_inst%htvp_col                     , & ! Input:  [real(r8) (:)   ]  latent heat of evaporation (/sublimation) [J/kg]                      
          qflx_ev_snow           => waterfluxbulk_inst%qflx_ev_snow_patch        , & ! Output: [real(r8) (:)   ]  evaporation flux from snow (mm H2O/s) [+ to atm]

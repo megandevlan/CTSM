@@ -157,7 +157,7 @@ contains
     real(r8) :: tstar                              ! temperature scaling parameter
     real(r8) :: um(bounds%begp:bounds%endp)        ! wind speed including the stablity effect [m/s]
     real(r8) :: ur(bounds%begp:bounds%endp)        ! wind speed at reference height [m/s]
-    real(r8) :: ustar(bounds%begp:bounds%endp)     ! friction velocity [m/s]
+!    real(r8) :: ustar(bounds%begp:bounds%endp)     ! friction velocity [m/s]
 !    real(r8) :: wc                                 ! convective velocity [m/s]
 !    real(r8) :: zeta                               ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: zldis(bounds%begp:bounds%endp)     ! reference height "minus" zero displacement height [m]
@@ -233,6 +233,7 @@ contains
          ram1             =>    frictionvel_inst%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
          zeta             =>    frictionvel_inst%zeta_patch            , & ! Output: [real(r8) (:)   ]  dimensionless stability parameter 
          wstar            =>    frictionvel_inst%wstar_patch           , & ! Output: [real(r8)       ]  convective velocity scale [m/s]
+         ustar                  => frictionvel_inst%ustar_patch        , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
 
          q_ref2m          =>    waterdiagnosticbulk_inst%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
          rh_ref2m         =>    waterdiagnosticbulk_inst%rh_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          

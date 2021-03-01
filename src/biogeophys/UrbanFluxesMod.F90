@@ -659,6 +659,8 @@ contains
 
             if (zeta >= 0._r8) then                   !stable
                zeta = min(zetamax,max(zeta,0.01_r8))
+               ! BIG QUESTION: What should wc be in stable situations?
+               wc = 0.0_r8
                um(l) = max(ur(l),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))

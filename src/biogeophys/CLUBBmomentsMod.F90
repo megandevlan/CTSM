@@ -621,6 +621,7 @@ contains
        clubbmoments_inst%wpthlpqp_grid(g) = wpthlpqp_term1_grid(g) + wpthlpqp_term2_grid(g)
     end do
 
+    write(iulog,*)'MDF: Final value of wp2: ',clubbmoments_inst%wp2_grid
     write(iulog,*)'MDF: Final value of thlp2: ',clubbmoments_inst%thlp2_grid
     write(iulog,*)'MDF: Final value of qp2: ',clubbmoments_inst%qp2_grid
     write(iulog,*)'MDF: Final value of wpthlp: ',clubbmoments_inst%wpthlp_grid
