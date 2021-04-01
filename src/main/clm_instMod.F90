@@ -466,6 +466,10 @@ contains
        call crop_inst%InitAccBuffer(bounds)
     end if
 
+    if (use_fates) then
+       call clm_fates%InitAccBuffer(bounds)
+    end if
+
     call print_accum_fields()
 
     call ncd_pio_closefile(params_ncid)
@@ -579,6 +583,7 @@ contains
 
        call clm_fates%restart(bounds, ncid, flag=flag,  &
             waterdiagnosticbulk_inst=water_inst%waterdiagnosticbulk_inst, &
+            waterstatebulk_inst=water_inst%waterstatebulk_inst, &
             canopystate_inst=canopystate_inst, &
             soilstate_inst=soilstate_inst)
 
