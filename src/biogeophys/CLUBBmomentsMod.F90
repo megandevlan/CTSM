@@ -375,7 +375,7 @@ contains
           if (patch%active(p)) then
 
                write(iulog,*)'MDF: patch type... ',patch%itype(p)
-               write(iulog,*)'MDF: patch weight: ',patch%wtgcell(p
+               write(iulog,*)'MDF: patch weight: ',patch%wtgcell(p)
 
                ! Compute the variance of vertical velocity for each patch 
                ! --------------------------------------------------------
