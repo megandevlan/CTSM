@@ -305,8 +305,10 @@ contains
     type(temperature_type)                 , intent(in)            :: temperature_inst
     !  !LOCAL VARIABLES:
     integer  :: p                                        ! Patch indices
-    integer  :: c,g                                      ! Column/gridcell indices
-    real(r8) :: rhoair                                   ! Air density 
+    integer  :: c,g,l                                    ! Column/gridcell/landunit indices
+    real(r8) :: rhoair                                   ! Air density
+    real(r8) :: sfcP                                     ! Surface atm pressure (Pa) 
+    real(r8) :: theta                                    ! Potential temperature (K) 
     real(r8) :: eflx_sh_pr_conversionPatch               ! Patch level eflx_sh correction term 
     real(r8) :: eflx_sh_il_conversionPatch               ! Patch level eflx_sh correction term
     real(r8) :: eflx_dynbal_grcPatch                     ! Patch level eflx_sh correction term
@@ -358,6 +360,7 @@ contains
          wstar                 => frictionvel_inst%wstar_patch                 , &  ! Input: [real(r8) (:)   ]  convective velocity scale [m/s]
          zeta                  => frictionvel_inst%zeta_patch                  , &  ! Input: [real(r8) (:)   ]  dimensionless stability parameter 
          forc_rho              => atm2lnd_inst%forc_rho_downscaled_col         , &  ! Input: [real(r8) (:)   ]  density (kg/m**3)   
+         forc_pbot             => atm2lnd_inst%forc_pbot_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          q_ref2m               => waterdiagnosticbulk_inst%q_ref2m_patch       , &  ! Input: [real(r8) (:)   ]  2 m height surface specific humidity (kg/g)
          t_ref2m               => temperature_inst%t_ref2m_patch               , &  ! Input: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
          eflx_sh_tot           => energyflux_inst%eflx_sh_tot_patch            , &  ! Input: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
@@ -371,9 +374,8 @@ contains
        do p = bounds%begp,bounds%endp
           if (patch%active(p)) then
 
-               !write(iulog,*)'MDF: patch type... ',patch%itype(p)        
-               !write(iulog,*)'MDF: col type...   ',col%itype(c)
-               !write(iulog,*)'MDF: patch weight: ',patch%wtgcell(p)
+               write(iulog,*)'MDF: patch type... ',patch%itype(p)
+               write(iulog,*)'MDF: patch weight: ',patch%wtgcell(p
 
                ! Compute the variance of vertical velocity for each patch 
                ! --------------------------------------------------------
@@ -387,9 +389,14 @@ contains
                ! ------------------------------------------------------------ 
                c = patch%column(p) 
                g = patch%gridcell(p)
-    
+               l = patch%landunit(p)    ! Only defining l for writing out log file -- DELETE later
+   
+               write(iulog,*)'MDF: col type...   ',col%itype(c)
+               write(iulog,*)'MDF: landunit type... ',lun%itype(l)
+ 
                ! Use column or gridcell values for each patch 
                rhoair = forc_rho(c)    
+               sfcP   = forc_pbot(c)
 
                ! Correct total SHFLX as in lnd2atmMod
                eflx_sh_pr_conversionPatch = eflx_sh_pr_conversion(c) 
@@ -407,7 +414,9 @@ contains
                end if 
 
                ! Also compute virtual temperature, which we'll use as 'theta' 
-               Tv(p)       = (1.0_r8 + 0.61_r8*q_ref2m(p))*t_ref2m(p)
+               theta       = t_ref2m(p)*(100000.0_r8/sfcP)**0.286_r8
+               !Tv(p)       = (1.0_r8 + 0.61_r8*q_ref2m(p))*t_ref2m(p)
+               Tv(p)       = (1.0_r8 + 0.61_r8*q_ref2m(p))*theta
 
                ! Compute the variance of total water specific humidity
                ! -----------------------------------------------------
@@ -620,21 +629,6 @@ contains
        clubbmoments_inst%wpthlp2_grid(g)  = 2.0_r8*wpthlp2_grid(g)
        clubbmoments_inst%wpthlpqp_grid(g) = wpthlpqp_term1_grid(g) + wpthlpqp_term2_grid(g)
     end do
-
-    write(iulog,*)'MDF: Final value of wp2: ',clubbmoments_inst%wp2_grid
-    write(iulog,*)'MDF: Final value of thlp2: ',clubbmoments_inst%thlp2_grid
-    write(iulog,*)'MDF: Final value of qp2: ',clubbmoments_inst%qp2_grid
-    write(iulog,*)'MDF: Final value of wpthlp: ',clubbmoments_inst%wpthlp_grid
-    write(iulog,*)'MDF: Final value of wpqp: ',clubbmoments_inst%wpqp_grid
-    write(iulog,*)'MDF: Final value of thlpqp: ',clubbmoments_inst%thlpqp_grid
-    write(iulog,*)'MDF: Final value of wp3: ',clubbmoments_inst%wp3_grid 
-    write(iulog,*)'MDF: Final value of up2: ',clubbmoments_inst%up2_grid
-    write(iulog,*)'MDF: Final value of wp4: ',clubbmoments_inst%wp4_grid
-    write(iulog,*)'MDF: Final value of wp2thlp: ',clubbmoments_inst%wp2thlp_grid
-    write(iulog,*)'MDF: Final value of wp2qp: ',clubbmoments_inst%wp2qp_grid
-    write(iulog,*)'MDF: Final value of wpqp2: ',clubbmoments_inst%wpqp2_grid
-    write(iulog,*)'MDF: Final value of wpthlp2: ',clubbmoments_inst%wpthlp2_grid
-    write(iulog,*)'MDF: Final value of wpthlpqp: ',clubbmoments_inst%wpthlpqp_grid
 
     end associate
 
