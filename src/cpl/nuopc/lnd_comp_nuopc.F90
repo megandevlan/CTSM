@@ -317,7 +317,7 @@ contains
     ! Realize the list of fields that will be exchanged
     !$  use omp_lib, only : omp_set_num_threads
     use ESMF                      , only : ESMF_VM, ESMF_VMGet
-    use clm_instMod               , only : lnd2atm_inst, lnd2glc_inst, water_inst
+    use clm_instMod               , only : lnd2atm_inst, lnd2glc_inst, water_inst, clubbmoments_inst
     use domainMod                 , only : ldomain
     use decompMod                 , only : ldecomp, bounds_type, get_proc_bounds
     use lnd_set_decomp_and_domain , only : lnd_set_decomp_and_domain_from_readmesh
@@ -623,7 +623,7 @@ contains
     !--------------------------------
     call get_proc_bounds(bounds)
     call export_fields(gcomp, bounds, glc_present, rof_prognostic, &
-         water_inst%waterlnd2atmbulk_inst, lnd2atm_inst, lnd2glc_inst, rc)
+         water_inst%waterlnd2atmbulk_inst, lnd2atm_inst, lnd2glc_inst, clubbmoments_inst, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Get calendar day of nextsw calculation
@@ -680,6 +680,7 @@ contains
     !$  use omp_lib, only : omp_set_num_threads
     use ESMF        , only : ESMF_VM, ESMF_VMGet
     use clm_instMod , only : water_inst, atm2lnd_inst, glc2lnd_inst, lnd2atm_inst, lnd2glc_inst
+    use clm_instMod , only : clubbmoments_inst
     use decompMod   , only : bounds_type, get_proc_bounds
     use clm_driver  , only : clm_drv
 
@@ -884,7 +885,7 @@ contains
 
        call t_startf ('lc_lnd_export')
        call export_fields(gcomp, bounds, glc_present, rof_prognostic, &
-            water_inst%waterlnd2atmbulk_inst, lnd2atm_inst, lnd2glc_inst, rc)
+            water_inst%waterlnd2atmbulk_inst, lnd2atm_inst, lnd2glc_inst, clubbmoments_inst, rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call t_stopf ('lc_lnd_export')
 

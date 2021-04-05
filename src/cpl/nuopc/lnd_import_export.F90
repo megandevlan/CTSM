@@ -138,8 +138,11 @@ module lnd_import_export
   character(*), parameter :: Sl_tsrf_elev   = 'Sl_tsrf_elev'
   character(*), parameter :: Sl_topo_elev   = 'Sl_topo_elev'
   character(*), parameter :: Flgl_qice_elev = 'Flgl_qice_elev'
+  character(*), parameter :: Sl_wp2_clubb   = 'Sl_wp2_clubb'
+  character(*), parameter :: Sl_thlp2_clubb = 'Sl_thlp2_clubb'
 
   logical :: send_to_atm
+  logical :: send_to_atm_clasp_fields = .true.
 
   character(*),parameter :: F01 = "('(lnd_import_export) ',a,i5,2x,i5,2x,d21.14)"
   character(*),parameter :: u_FILE_u = &
@@ -283,6 +286,11 @@ contains
        if (carma_fields /= ' ') then
           call fldlist_add(fldsFrLnd_num, fldsFrlnd, Sl_soilw) ! optional for carma
        end if
+       if (send_to_atm_clasp_fields) then   ! optional for CLASP 
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp2_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_thlp2_clubb)
+       end if
+
     end if
 
     ! export to rof
@@ -686,7 +694,7 @@ contains
 
   !===============================================================================
   subroutine export_fields( gcomp, bounds, glc_present, rof_prognostic, &
-       waterlnd2atmbulk_inst, lnd2atm_inst, lnd2glc_inst, rc)
+       waterlnd2atmbulk_inst, lnd2atm_inst, lnd2glc_inst, clubbmoments_inst, rc)
 
     !-------------------------------
     ! Pack the export state
@@ -695,6 +703,7 @@ contains
     !-------------------------------
 
     use Waterlnd2atmBulkType , only: waterlnd2atmbulk_type
+    use CLUBBmomentsMod      , only: clubbmoments_type
 
     ! input/output variables
     type(ESMF_GridComp)                         :: gcomp
@@ -704,6 +713,7 @@ contains
     type(waterlnd2atmbulk_type) , intent(inout) :: waterlnd2atmbulk_inst
     type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst ! land to atmosphere exchange data type
     type(lnd2glc_type)          , intent(inout) :: lnd2glc_inst ! land to atmosphere exchange data type
+    type(clubbmoments_type)     , intent(inout) :: clubbmoments_inst ! land to atmosphere clubb moments
     integer                     , intent(out)   :: rc
 
     ! local variables
@@ -809,6 +819,12 @@ contains
        end if
        if (fldchk(exportState, Sl_fztop)) then ! fire emis from land
           call state_setexport_1d(exportState, Sl_fztop, lnd2atm_inst%fireztop_grc(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       if (fldchk(exportState, Sl_wp2_clubb)) then ! clasp fields
+          call state_setexport_1d(exportState, Sl_wp2_clubb, clubbmoments_inst%wp2_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_thlp2_clubb, clubbmoments_inst%thlp2_grid(begg:), rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
     endif
