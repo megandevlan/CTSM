@@ -233,7 +233,7 @@ contains
          ram1             =>    frictionvel_inst%ram1_patch            , & ! Output: [real(r8) (:)   ]  aerodynamical resistance (s/m)                    
          zeta             =>    frictionvel_inst%zeta_patch            , & ! Output: [real(r8) (:)   ]  dimensionless stability parameter 
          wstar            =>    frictionvel_inst%wstar_patch           , & ! Output: [real(r8)       ]  convective velocity scale [m/s]
-         ustar                  => frictionvel_inst%ustar_patch        , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
+         ustar            =>    frictionvel_inst%ustar_patch           , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
 
          q_ref2m          =>    waterdiagnosticbulk_inst%q_ref2m_patch          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)      
          rh_ref2m         =>    waterdiagnosticbulk_inst%rh_ref2m_patch         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)          

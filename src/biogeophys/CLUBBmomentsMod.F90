@@ -17,7 +17,6 @@ module CLUBBmomentsMod
   use clm_varcon             , only : spval
   use decompMod              , only : bounds_type
   !
-!  use CLUBBMomentsType       , only : clubbmoments_type
   use FrictionvelocityMod    , only : frictionvel_type
   use EnergyFluxType         , only : energyflux_type
   use atm2lndType            , only : atm2lnd_type
@@ -200,12 +199,12 @@ contains
          ptr_gcell=this%wpthlp_grid, default='inactive')
 
     this%wpqp_grid(begg:endg) = spval
-    call hist_addfld1d (fname='WPQP_CLUBB',  units='m/s K',  &
+    call hist_addfld1d (fname='WPQP_CLUBB',  units='m/s kg/kg',  &
          avgflag='A', long_name='Surface covariance of vertical velocity and humidity for CLUBB',&
          ptr_gcell=this%wpqp_grid, default='inactive')
 
     this%thlpqp_grid(begg:endg) = spval
-    call hist_addfld1d (fname='THLPQP_CLUBB',  units='m/s K',  &
+    call hist_addfld1d (fname='THLPQP_CLUBB',  units='kg/kg K',  &
          avgflag='A', long_name='Surface covariance of temperature and humidity for CLUBB',&
          ptr_gcell=this%thlpqp_grid, default='inactive')
 
