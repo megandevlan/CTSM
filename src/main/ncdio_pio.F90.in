@@ -1348,7 +1348,7 @@ contains
     start(:) = 0
     count(:) = 0
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
 
@@ -1377,7 +1377,7 @@ contains
 #else
        if (varpresent) then
           allocate(idata1d(size(data)))
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
@@ -1473,7 +1473,7 @@ contains
     start(:) = 0
     count(:) = 0
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
 
@@ -1494,7 +1494,7 @@ contains
        end if
 #else
        if (varpresent) then
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
@@ -1698,7 +1698,7 @@ contains
     end if
 #endif
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
@@ -1893,11 +1893,11 @@ contains
        allocate(temp(lb2:ub2,lb1:ub1))
     end if
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
              if (trim(clmlevel) == grlnd) then
@@ -1908,14 +1908,23 @@ contains
                    n=4
                 end if
              else
-                count(2) = size(data,dim=2)
+                if (present(switchdim)) then
+                   count(2) = size(temp,dim=2)
+                else
+                   count(2) = size(data,dim=2)
+                end if
                 n=2
                 if (present(nt)) then
                    start(3) = nt ; count(3) = 1
                    n=3
                 end if
              end if
+             status = pio_inq_varndims(ncid, vardesc, ndims)
              if (present(switchdim)) then
+                if (ndims == 1) then 
+                   write(iulog,*) trim(subname),' ERROR: dont know how to handle for switchdim'
+                   call shr_sys_abort(errMsg(sourcefile, __LINE__))
+                end if
                 status = pio_get_var(ncid, vardesc, start(1:n), count(1:n), temp)
                 do j = lb2,ub2
                    do i = lb1,ub1
@@ -1923,8 +1932,13 @@ contains
                    end do
                 end do
              else
-                status = pio_get_var(ncid, vardesc, start(1:n), count(1:n), data)
-             endif
+                if (ndims.eq.1) then
+                   n=1
+                   status = pio_get_var(ncid, vardesc, start(1:n), count(1:n), data(:,1))
+                else
+                   status = pio_get_var(ncid, vardesc, start(1:n), count(1:n), data)
+                end if
+             end if
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids(1:ndims))
@@ -2103,11 +2117,11 @@ contains
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
     end if
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              start(:) = 1
              count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
