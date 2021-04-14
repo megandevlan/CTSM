@@ -13,6 +13,7 @@ module CLUBBmomentsMod
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use clm_varctl             , only : iulog
+  use clm_varctl             , only : compute_CLUBB_HMG, compute_CLUBB_HTG 
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varcon             , only : spval
   use decompMod              , only : bounds_type
@@ -522,113 +523,140 @@ contains
          clubbmoments_inst%wpqp_grid (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')
 
-    call  p2g(bounds, & 
-          thlp2(bounds%begp:bounds%endp), &
-          thlp2_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
-
-    call  p2g(bounds, &
-          Tv(bounds%begp:bounds%endp), &
-          theta_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
-
-    call  p2g(bounds, &
-          qp2(bounds%begp:bounds%endp), &
-          qp2_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
-
-    call  p2g(bounds, &
-          q_ref2m(bounds%begp:bounds%endp), &
-          q_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
-
-    call  p2g(bounds, &
-          thlpqp(bounds%begp:bounds%endp), &
-          thlpqp_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
-
-    ! Some moments need a second term to represent SGS heterogeneity
-    !   (The difference in patch values from gridcell mean) 
-    do p = bounds%begp,bounds%endp
-          if (patch%active(p)) then
-             g = patch%gridcell(p)
-             
-             ! Compute squared difference between patch and grid mean temperature 
-             theta_sqr(p) = (Tv(p) - theta_grid(g))**2.0_r8
-
-            ! Compute squared diff between patch and grid mean humidity
-            q_sqr(p) = (q_ref2m(p) - q_grid(g))**2.0_r8
-
-            ! Compute diff between patch and grid mean humidity and temperature 
-            thlpqp_sqr(p) = (Tv(p) - theta_grid(g)) * (q_ref2m(p) - q_grid(g))
-    
-            ! Compute patch level covariances between variances and other variables
-            wp2thlp(p) = (Tv(p) - theta_grid(g))*clubbmoments_inst%wp2_grid(g)
-            wp2qp(p)   = (q_ref2m(p) - q_grid(g))*clubbmoments_inst%qp2_grid(g)
-            wpqp2(p)   = (q_ref2m(p) - q_grid(g))*KL(p)                
-            wpthlp2(p) = (Tv(p) - theta_grid(g))*KH(p)
-           
-           ! Compute terms that go into means of wpthlpqp
-           wpthlpqp_term1(p) = (Tv(p) - theta_grid(g))*KL(p)
-           wpthlpqp_term2(p) = (q_ref2m(p) - q_grid(g))*KH(p)
+    if (compute_CLUBB_HMG) then 
  
-          end if
-    end do 
+       call  p2g(bounds, &
+             thlp2(bounds%begp:bounds%endp), &
+             clubbmoments_inst%thlp2_grid (bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-    call  p2g(bounds, &
-          wp2thlp(bounds%begp:bounds%endp), &
-          clubbmoments_inst%wp2thlp_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       call  p2g(bounds, &
+             qp2(bounds%begp:bounds%endp), &
+             clubbmoments_inst%qp2_grid (bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-    call  p2g(bounds, &
-          wp2qp(bounds%begp:bounds%endp), &
-          clubbmoments_inst%wp2qp_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       call  p2g(bounds, &
+             thlpqp(bounds%begp:bounds%endp), &
+             clubbmoments_inst%thlpqp_grid (bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+        
+       do g = bounds%begg,bounds%endg
+          clubbmoments_inst%wp2thlp_grid(g)  = 0.0_r8
+          clubbmoments_inst%wp2qp_grid(g)    = 0.0_r8
+          clubbmoments_inst%wpqp2_grid(g)    = 0.0_r8
+          clubbmoments_inst%wpthlp2_grid(g)  = 0.0_r8 
+          clubbmoments_inst%wpthlpqp_grid(g) = 0.0_r8
+       end do 
 
-    call  p2g(bounds, &
-          theta_sqr(bounds%begp:bounds%endp), &
-          theta_sqr_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+    else if (compute_CLUBB_HTG) then
 
-   call  p2g(bounds, &
-          q_sqr(bounds%begp:bounds%endp), &
-          q_sqr_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       call  p2g(bounds, & 
+             thlp2(bounds%begp:bounds%endp), &
+             thlp2_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-   call  p2g(bounds, &
-          thlpqp_sqr(bounds%begp:bounds%endp), &
-          thlpqp_sqr_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       call  p2g(bounds, &
+             Tv(bounds%begp:bounds%endp), &
+             theta_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-    call  p2g(bounds, &
-          wpqp2(bounds%begp:bounds%endp), &
-          wpqp2_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       call  p2g(bounds, &
+             qp2(bounds%begp:bounds%endp), &
+             qp2_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-    call  p2g(bounds, &
-          wpthlp2(bounds%begp:bounds%endp), &
-          wpthlp2_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       call  p2g(bounds, &
+             q_ref2m(bounds%begp:bounds%endp), &
+             q_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-    call  p2g(bounds, &
-          wpthlpqp_term1(bounds%begp:bounds%endp), &
-          wpthlpqp_term1_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       call  p2g(bounds, &
+             thlpqp(bounds%begp:bounds%endp), &
+             thlpqp_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
-    call  p2g(bounds, &
-          wpthlpqp_term2(bounds%begp:bounds%endp), &
-          wpthlpqp_term2_grid(bounds%begg:bounds%endg), &
-          p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+       ! Some moments need a second term to represent SGS heterogeneity
+       !   (The difference in patch values from gridcell mean) 
+       do p = bounds%begp,bounds%endp
+             if (patch%active(p)) then
+                g = patch%gridcell(p)
+             
+                ! Compute squared difference between patch and grid mean temperature 
+                theta_sqr(p) = (Tv(p) - theta_grid(g))**2.0_r8
 
-    do g = bounds%begg,bounds%endg
-       clubbmoments_inst%thlp2_grid(g)  = thlp2_grid(g)  + theta_sqr_grid(g)
-       clubbmoments_inst%qp2_grid(g)    = qp2_grid(g)    + q_sqr_grid(g)
-       clubbmoments_inst%thlpqp_grid(g) = thlpqp_grid(g) + thlpqp_sqr_grid(g)
-       clubbmoments_inst%wpqp2_grid(g)  = 2.0_r8*wpqp2_grid(g) 
-       clubbmoments_inst%wpthlp2_grid(g)  = 2.0_r8*wpthlp2_grid(g)
-       clubbmoments_inst%wpthlpqp_grid(g) = wpthlpqp_term1_grid(g) + wpthlpqp_term2_grid(g)
-    end do
+                ! Compute squared diff between patch and grid mean humidity
+                q_sqr(p) = (q_ref2m(p) - q_grid(g))**2.0_r8
 
+                ! Compute diff between patch and grid mean humidity and temperature 
+                thlpqp_sqr(p) = (Tv(p) - theta_grid(g)) * (q_ref2m(p) - q_grid(g))
+    
+                ! Compute patch level covariances between variances and other variables
+                wp2thlp(p) = (Tv(p) - theta_grid(g))*clubbmoments_inst%wp2_grid(g)
+                wp2qp(p)   = (q_ref2m(p) - q_grid(g))*clubbmoments_inst%qp2_grid(g)
+                wpqp2(p)   = (q_ref2m(p) - q_grid(g))*KL(p)                
+                wpthlp2(p) = (Tv(p) - theta_grid(g))*KH(p)
+           
+                ! Compute terms that go into means of wpthlpqp
+                wpthlpqp_term1(p) = (Tv(p) - theta_grid(g))*KL(p)
+               wpthlpqp_term2(p) = (q_ref2m(p) - q_grid(g))*KH(p)
+ 
+             end if
+       end do 
+
+       call  p2g(bounds, &
+             wp2thlp(bounds%begp:bounds%endp), &
+             clubbmoments_inst%wp2thlp_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             wp2qp(bounds%begp:bounds%endp), &
+             clubbmoments_inst%wp2qp_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             theta_sqr(bounds%begp:bounds%endp), &
+             theta_sqr_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             q_sqr(bounds%begp:bounds%endp), &
+             q_sqr_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             thlpqp_sqr(bounds%begp:bounds%endp), &
+             thlpqp_sqr_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             wpqp2(bounds%begp:bounds%endp), &
+             wpqp2_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             wpthlp2(bounds%begp:bounds%endp), &
+             wpthlp2_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             wpthlpqp_term1(bounds%begp:bounds%endp), &
+             wpthlpqp_term1_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       call  p2g(bounds, &
+             wpthlpqp_term2(bounds%begp:bounds%endp), &
+             wpthlpqp_term2_grid(bounds%begg:bounds%endg), &
+             p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
+
+       do g = bounds%begg,bounds%endg
+          clubbmoments_inst%thlp2_grid(g)  = thlp2_grid(g)  + theta_sqr_grid(g)
+          clubbmoments_inst%qp2_grid(g)    = qp2_grid(g)    + q_sqr_grid(g)
+          clubbmoments_inst%thlpqp_grid(g) = thlpqp_grid(g) + thlpqp_sqr_grid(g)
+          clubbmoments_inst%wpqp2_grid(g)  = 2.0_r8*wpqp2_grid(g) 
+          clubbmoments_inst%wpthlp2_grid(g)  = 2.0_r8*wpthlp2_grid(g)
+          clubbmoments_inst%wpthlpqp_grid(g) = wpthlpqp_term1_grid(g) + wpthlpqp_term2_grid(g)
+       end do
+    end if 
     end associate
 
   end subroutine CLUBBmoments

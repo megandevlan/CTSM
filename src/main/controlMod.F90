@@ -277,6 +277,9 @@ contains
          use_grainproduct, use_snicar_frc, use_vancouver, use_mexicocity, use_noio, &
          use_nguardrail
 
+    ! Flags for computing CLUBB moments (part of CLASP)
+    namelist /clm_inparm/ compute_CLUBB_HMG, compute_CLUBB_HTG
+
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -642,6 +645,10 @@ contains
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_SSRE, 1, MPI_LOGICAL, 0, mpicom, ier)
+    
+    ! CLUBB moments variables 
+    call mpi_bcast (compute_CLUBB_HMG, 1, MPI_LOGICAL, 0, mpicom, ier) 
+    call mpi_bcast (compute_CLUBB_HTG, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
@@ -885,6 +892,8 @@ contains
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_SSRE = ', use_SSRE
+    write(iulog,*) '    compute_CLUBB_HMG = ', compute_CLUBB_HMG 
+    write(iulog,*) '    compute_CLUBB_HTG = ', compute_CLUBB_HTG
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     if (fsurdat == ' ') then

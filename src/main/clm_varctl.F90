@@ -316,6 +316,12 @@ module clm_varctl
   ! number of days before one considers the perennially snow-covered point 'land ice'
   integer , public :: glc_snow_persistence_max_days = 7300  
 
+  !----------------------------------------------------------
+  ! CLASP switches to compute CLUBB's surface moments 
+  !----------------------------------------------------------
+  logical, public :: compute_CLUBB_HMG = .false.
+  logical, public :: compute_CLUBB_HTG = .false.
+
   !
   !----------------------------------------------------------
   ! single column control variables

@@ -13,6 +13,7 @@ module clm_driver
   use clm_varctl             , only : use_cn, use_lch4, use_noio, use_c13, use_c14
   use clm_varctl             , only : use_crop, irrigate, ndep_from_cpl
   use clm_varctl             , only : use_soil_moisture_streams
+  use clm_varctl             , only : compute_CLUBB_HMG, compute_CLUBB_HTG
   use clm_time_manager       , only : get_nstep, is_beg_curr_day
   use clm_time_manager       , only : get_prev_date, is_first_step
   use clm_varpar             , only : nlevsno, nlevgrnd
@@ -843,10 +844,11 @@ contains
        ! ============================================================================
        ! Compute higher order moments for CLUBB 
        ! ============================================================================
-       ! CLASP: Add call to CLUBBmoments (MDF)
-       call CLUBBmoments(bounds_clump,clubbmoments_inst,frictionvel_inst,energyflux_inst, &
-            atm2lnd_inst,lnd2atm_inst,water_inst%waterdiagnosticbulk_inst, &
-            temperature_inst)
+       if (compute_CLUBB_HMG .OR. compute_CLUBB_HTG) then 
+          call CLUBBmoments(bounds_clump,clubbmoments_inst,frictionvel_inst,energyflux_inst, &
+               atm2lnd_inst,lnd2atm_inst,water_inst%waterdiagnosticbulk_inst, &
+               temperature_inst)
+       end if 
 
        ! ============================================================================
        ! Perform averaging from patch level to column level

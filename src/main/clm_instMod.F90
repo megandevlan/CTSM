@@ -10,6 +10,7 @@ module clm_instMod
   use clm_varpar      , only : ndecomp_pools, nlevdecomp_full
   use clm_varctl      , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates
   use clm_varctl      , only : use_century_decomp, use_crop, snow_cover_fraction_method, paramfile
+  use clm_varctl      , only : compute_CLUBB_HMG, compute_CLUBB_HTG
   use clm_varcon      , only : bdsno, c13ratio, c14ratio
   use landunit_varcon , only : istice_mec, istsoil
   use perf_mod        , only : t_startf, t_stopf
@@ -312,8 +313,10 @@ contains
     call aerosol_inst%Init(bounds, NLFilename)
 
     call frictionvel_inst%Init(bounds, NLFilename = NLFilename, params_ncid = params_ncid)
- 
-    call clubbmoments_inst%Init(bounds)
+
+    if (compute_CLUBB_HMG .OR. compute_CLUBB_HTG) then  
+       call clubbmoments_inst%Init(bounds)
+    end if 
 
     call lakestate_inst%Init(bounds)
     call LakeConInit()
