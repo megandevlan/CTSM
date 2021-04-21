@@ -57,6 +57,8 @@ module CLUBBmomentsMod
      real(r8), pointer :: wpqp2_grid(:)    ! Covariance of vertical velocity and humidity variance (m/s * kg**2/kg**2)
      real(r8), pointer :: wpthlp2_grid(:)  ! Covariance of vertical velocity and temperature variance (m/s * K**2)
      real(r8), pointer :: wpthlpqp_grid(:) ! Product of surface vertical velocity, humidity, and temperature (m/s kg/kg K)
+     real(r8), pointer :: upwp_grid(:)     ! Zonal momentum flux 
+     real(r8), pointer :: vpwp_grid(:)     ! Meridional momentum flux 
 
    contains
      procedure, public  :: Init            ! Public initialization method
@@ -140,6 +142,8 @@ contains
     allocate( this%wpqp2_grid    (begg:endg))          ; this%wpqp2_grid(:)   = nan
     allocate( this%wpthlp2_grid  (begg:endg))          ; this%wpthlp2_grid(:) = nan
     allocate( this%wpthlpqp_grid (begg:endg))          ; this%wpthlpqp_grid(:) = nan
+    allocate( this%upwp_grid     (begg:endg))          ; this%upwp_grid(:)    = nan
+    allocate( this%vpwp_grid     (begg:endg))          ; this%vpwp_grid(:)    = nan
 
   end subroutine InitAllocate
 
@@ -249,6 +253,16 @@ contains
          avgflag='A', long_name='Surface product of vertical velocity, humidity, and temperature for CLUBB',&
          ptr_gcell=this%wpthlpqp_grid, default='inactive')
 
+    this%upwp_grid(begg:endg) = spval
+    call hist_addfld1d (fname='UPWP_CLUBB',  units='m^2/s^2',  &
+         avgflag='A', long_name='Surface zonal momentum flux for CLUBB',&
+         ptr_gcell=this%upwp_grid, default='inactive')
+
+    this%vpwp_grid(begg:endg) = spval
+    call hist_addfld1d (fname='VPWP_CLUBB',  units='m^2/s^2',  &
+         avgflag='A', long_name='Surface meridional momentum flux for CLUBB',&
+         ptr_gcell=this%vpwp_grid, default='inactive')
+
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -279,6 +293,8 @@ contains
     this%wpqp2_grid(bounds%begg:bounds%endg)     = 0.0_r8
     this%wpthlp2_grid(bounds%begg:bounds%endg)   = 0.0_r8
     this%wpthlpqp_grid(bounds%begg:bounds%endg)  = 0.0_r8
+    this%upwp_grid(bounds%begg:bounds%endg)      = 0.0_r8
+    this%vpwp_grid(bounds%begg:bounds%endg)      = 0.0_r8
 
   end subroutine InitCold
 
@@ -325,6 +341,8 @@ contains
     real(r8) :: KL(bounds%begp:bounds%endp)              ! Humidity flux
     real(r8) :: wp2(bounds%begp:bounds%endp)             ! Vertical velocityvariance (m2/s2)
     real(r8) :: thlp2(bounds%begp:bounds%endp)           ! Temperature variance (K2)
+    real(r8) :: upwp(bounds%begp:bounds%endp)            ! Zonal momentum flux (m2/s2)
+    real(r8) :: vpwp(bounds%begp:bounds%endp)            ! Meridional momentum flux (m2/s2)
     real(r8) :: qp2(bounds%begp:bounds%endp)             ! Specific humidity variance (kg2/kg2)
     real(r8) :: thlpqp(bounds%begp:bounds%endp)          ! Covariance of temperature and humidity (K * kg/kg)
     real(r8) :: Tv(bounds%begp:bounds%endp)              ! Virtual temperature at the surface (column=patch level)
@@ -360,22 +378,24 @@ contains
          wstar                 => frictionvel_inst%wstar_patch                 , &  ! Input: [real(r8) (:)   ]  convective velocity scale [m/s]
          zeta                  => frictionvel_inst%zeta_patch                  , &  ! Input: [real(r8) (:)   ]  dimensionless stability parameter 
          forc_rho              => atm2lnd_inst%forc_rho_downscaled_col         , &  ! Input: [real(r8) (:)   ]  density (kg/m**3)   
-         forc_pbot             => atm2lnd_inst%forc_pbot_downscaled_col        , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
+         forc_pbot             => atm2lnd_inst%forc_pbot_downscaled_col        , &  ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          q_ref2m               => waterdiagnosticbulk_inst%q_ref2m_patch       , &  ! Input: [real(r8) (:)   ]  2 m height surface specific humidity (kg/g)
          t_ref2m               => temperature_inst%t_ref2m_patch               , &  ! Input: [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)
          eflx_sh_tot           => energyflux_inst%eflx_sh_tot_patch            , &  ! Input: [real(r8) (:)   ]  total sensible heat flux (W/m**2) [+ to atm]
          eflx_sh_pr_conversion => energyflux_inst%eflx_sh_precip_conversion_col, &  ! Input: [real(r8) (:)   ]  correction to eflx_sh
          eflx_sh_il_conversion => lnd2atm_inst%eflx_sh_ice_to_liq_col          , &  ! Input: [real(r8) (:)   ]  correction to eflx_sh  
          eflx_dynbal_grc       => energyflux_inst%eflx_dynbal_grc              , &  ! Input: [real(r8) (:)   ]  correction eflx_sh 
-         eflx_lh_tot           => energyflux_inst%eflx_lh_tot_patch              &  ! Input: [real(r8) (:)   ]  total latent heat flux (W/m**2)  [+ to atm]
+         eflx_lh_tot           => energyflux_inst%eflx_lh_tot_patch            , &  ! Input: [real(r8) (:)   ]  total latent heat flux (W/m**2)  [+ to atm]
+         taux                  => energyflux_inst%taux_patch                   , &  ! Input: [real(r8) (:)   ]  wind (shear) stress: e-w (kg/m/s**2)                                  
+         tauy                  => energyflux_inst%tauy_patch                     &  ! Input: [real(r8) (:)   ]  wind (shear) stress: n-s (kg/m/s**2) 
          ) 
 
 
        do p = bounds%begp,bounds%endp
           if (patch%active(p)) then
 
-               write(iulog,*)'MDF: patch type... ',patch%itype(p)
-               write(iulog,*)'MDF: patch weight: ',patch%wtgcell(p)
+               ! write(iulog,*)'MDF: patch type... ',patch%itype(p)
+               ! write(iulog,*)'MDF: patch weight: ',patch%wtgcell(p)
 
                ! Compute the variance of vertical velocity for each patch 
                ! --------------------------------------------------------
@@ -391,12 +411,16 @@ contains
                g = patch%gridcell(p)
                l = patch%landunit(p)    ! Only defining l for writing out log file -- DELETE later
    
-               write(iulog,*)'MDF: col type...   ',col%itype(c)
-               write(iulog,*)'MDF: landunit type... ',lun%itype(l)
+               ! write(iulog,*)'MDF: col type...   ',col%itype(c)
+               ! write(iulog,*)'MDF: landunit type... ',lun%itype(l)
  
                ! Use column or gridcell values for each patch 
                rhoair = forc_rho(c)    
                sfcP   = forc_pbot(c)
+
+               ! Compute zonal and meridional momentum fluxes 
+               upwp(p) = -taux(p)/rhoair 
+               vpwp(p) = -tauy(p)/rhoair
 
                ! Correct total SHFLX as in lnd2atmMod
                eflx_sh_pr_conversionPatch = eflx_sh_pr_conversion(c) 
@@ -506,6 +530,16 @@ contains
     call p2g(bounds, &
          up2(bounds%begp:bounds%endp), &
          clubbmoments_inst%up2_grid (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')
+
+    call p2g(bounds, &
+         upwp(bounds%begp:bounds%endp), &
+         clubbmoments_inst%upwp_grid (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')
+
+    call p2g(bounds, &
+         vpwp(bounds%begp:bounds%endp), &
+         clubbmoments_inst%vpwp_grid (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')
 
     call p2g(bounds, &
