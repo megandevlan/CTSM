@@ -140,6 +140,7 @@ module lnd_import_export
   character(*), parameter :: Flgl_qice_elev = 'Flgl_qice_elev'
   character(*), parameter :: Sl_wp2_clubb   = 'Sl_wp2_clubb'
   character(*), parameter :: Sl_thlp2_clubb = 'Sl_thlp2_clubb'
+  character(*), parameter :: Sl_wpthlp_clubb = 'Sl_wpthlp_clubb'
 
   logical :: send_to_atm
   logical :: send_to_atm_clasp_fields = .true.
@@ -289,6 +290,7 @@ contains
        if (send_to_atm_clasp_fields) then   ! optional for CLASP 
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp2_clubb)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_thlp2_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wpthlp_clubb)
        end if
 
     end if
@@ -827,6 +829,8 @@ contains
           call state_setexport_1d(exportState, Sl_wp2_clubb, clubbmoments_inst%wp2_grid(begg:), rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call state_setexport_1d(exportState, Sl_thlp2_clubb, clubbmoments_inst%thlp2_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wpthlp_clubb, clubbmoments_inst%wpthlp_grid(begg:), rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
     endif
