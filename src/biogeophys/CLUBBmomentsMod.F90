@@ -419,8 +419,8 @@ contains
                sfcP   = forc_pbot(c)
 
                ! Compute zonal and meridional momentum fluxes 
-               upwp(p) = -taux(p)/rhoair 
-               vpwp(p) = -tauy(p)/rhoair
+               upwp(p) = taux(p)/rhoair 
+               vpwp(p) = tauy(p)/rhoair
 
                ! Correct total SHFLX as in lnd2atmMod
                eflx_sh_pr_conversionPatch = eflx_sh_pr_conversion(c) 
@@ -632,7 +632,7 @@ contains
            
                 ! Compute terms that go into means of wpthlpqp
                 wpthlpqp_term1(p) = (Tv(p) - theta_grid(g))*KL(p)
-               wpthlpqp_term2(p) = (q_ref2m(p) - q_grid(g))*KH(p)
+                wpthlpqp_term2(p) = (q_ref2m(p) - q_grid(g))*KH(p)
  
              end if
        end do 
