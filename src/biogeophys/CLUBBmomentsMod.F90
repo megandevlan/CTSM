@@ -51,6 +51,7 @@ module CLUBBmomentsMod
      real(r8), pointer :: thlpqp_grid(:)   ! Covariance of temperature and humidity (K * kg/kg)
      real(r8), pointer :: wp3_grid(:)      ! Third order moment of vertical velocity (m**3/s**3)
      real(r8), pointer :: up2_grid(:)      ! Horizontal velocity variance (m**2/s**2)
+     real(r8), pointer :: vp2_grid(:)      ! Meridional velocity variance (m**2/s**2) 
      real(r8), pointer :: wp4_grid(:)      ! Fourth order moment of vertical velocity (m**4/s**4)
      real(r8), pointer :: wp2thlp_grid(:)  ! Covariance of vertical velocity variance and temperature (m**2/s**2 * K)
      real(r8), pointer :: wp2qp_grid(:)    ! Covariance of vertical velocity variance and humidity (m**2/s**2 * kg/kg)
@@ -136,6 +137,7 @@ contains
     allocate( this%thlpqp_grid   (begg:endg))          ; this%thlpqp_grid(:)  = nan
     allocate( this%wp3_grid      (begg:endg))          ; this%wp3_grid(:)     = nan
     allocate( this%up2_grid      (begg:endg))          ; this%up2_grid(:)     = nan
+    allocate( this%vp2_grid      (begg:endg))          ; this%vp2_grid(:)     = nan
     allocate( this%wp4_grid      (begg:endg))          ; this%wp4_grid(:)     = nan
     allocate( this%wp2thlp_grid  (begg:endg))          ; this%wp2thlp_grid(:) = nan
     allocate( this%wp2qp_grid    (begg:endg))          ; this%wp2qp_grid(:)   = nan
@@ -223,6 +225,11 @@ contains
          avgflag='A', long_name='Surface horizontal velocity variance for CLUBB',&
          ptr_gcell=this%up2_grid, default='inactive')
 
+    this%vp2_grid(begg:endg) = spval
+    call hist_addfld1d (fname='VP2_CLUBB',  units='m^2/s^2',  &
+         avgflag='A', long_name='Surface meridional velocity variance for CLUBB',&
+         ptr_gcell=this%vp2_grid, default='inactive')
+
     this%wp4_grid(begg:endg) = spval
     call hist_addfld1d (fname='WP4_CLUBB',  units='m^4/s^4',  &
          avgflag='A', long_name='Surface fourth order moment of vertical velocity for CLUBB',&
@@ -287,6 +294,7 @@ contains
     this%thlpqp_grid(bounds%begg:bounds%endg)    = 0.0_r8
     this%wp3_grid(bounds%begg:bounds%endg)       = 0.0_r8
     this%up2_grid(bounds%begg:bounds%endg)       = 0.0_r8
+    this%vp2_grid(bounds%begg:bounds%endg)       = 0.0_r8
     this%wp4_grid(bounds%begg:bounds%endg)       = 0.0_r8
     this%wp2thlp_grid(bounds%begg:bounds%endg)   = 0.0_r8
     this%wp2qp_grid(bounds%begg:bounds%endg)     = 0.0_r8
@@ -358,7 +366,8 @@ contains
     real(r8) :: thlpqp_sqr(bounds%begp:bounds%endp)      ! Patch level difference in theta and Q from grid mean
     real(r8) :: thlpqp_sqr_grid(bounds%begg:bounds%endg) ! Gridcell weighted mean of patch theta and Q differences
     real(r8) :: wp3(bounds%begp:bounds%endp)             ! Vertical velocity skew (m3/s3)
-    real(r8) :: up2(bounds%begp:bounds%endp)             ! Horizontal velocityvariance (m2/s2)
+    real(r8) :: up2(bounds%begp:bounds%endp)             ! Horizontal velocity variance (m2/s2)
+    real(r8) :: vp2(bounds%begp:bounds%endp)             ! Meridional velocity variance (m2/s2)
     real(r8) :: wp4(bounds%begp:bounds%endp)             ! Fourth order moment of vertical velocity (m4/s4) 
     real(r8) :: wp2thlp(bounds%begp:bounds%endp)         ! Covariance of vertical velocity variance and temperature (m2/s2 * K) 
     real(r8) :: wp2qp(bounds%begp:bounds%endp)           ! Covariance of vertical velocity variance and humidity (m2/s2 * kg/kg)
@@ -482,10 +491,12 @@ contains
 
                ! Compute the variance of horizontal velocity 
                ! -------------------------------------------
-                if (KH(p)>=0.0_r8) then 
-                  up2(p) = (4.0_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
+                if (KH(p)>0.0_r8) then 
+                  up2(p) = (4.00_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
+                  vp2(p) = (1.75_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
                else 
-                  up2(p) = 4.0_r8 * ustar(p)**2.0_r8 
+                  up2(p) = 4.00_r8 * ustar(p)**2.0_r8 
+                  vp2(p) = 1.75_r8 * ustar(p)**2.0_r8
                end if 
 
                ! Compute the fourth order moment of vertical velocity
@@ -530,6 +541,11 @@ contains
     call p2g(bounds, &
          up2(bounds%begp:bounds%endp), &
          clubbmoments_inst%up2_grid (bounds%begg:bounds%endg), &
+         p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')
+
+    call p2g(bounds, &
+         vp2(bounds%begp:bounds%endp), &
+         clubbmoments_inst%vp2_grid (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity',l2g_scale_type='unity')
 
     call p2g(bounds, &

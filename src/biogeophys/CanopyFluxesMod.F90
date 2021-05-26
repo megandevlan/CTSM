@@ -1331,6 +1331,11 @@ bioms:   do f = 1, fn
                else
                   zeta(p) = min(zetamax,max(zeta(p),0.01_r8))
                endif
+! +++ MDF
+!  Copied from UrbanFluxesMod: wstar should be set and not missing in stable situations
+               ! BIG QUESTION: What should wc be in stable situations?
+               wstar(p) = 0.0_r8
+! --- MDF
                um(p) = max(ur(p),0.1_r8)
             else                     !unstable
                zeta(p) = max(-100._r8,min(zeta(p),-0.01_r8))

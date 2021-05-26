@@ -138,9 +138,23 @@ module lnd_import_export
   character(*), parameter :: Sl_tsrf_elev   = 'Sl_tsrf_elev'
   character(*), parameter :: Sl_topo_elev   = 'Sl_topo_elev'
   character(*), parameter :: Flgl_qice_elev = 'Flgl_qice_elev'
-  character(*), parameter :: Sl_wp2_clubb   = 'Sl_wp2_clubb'
-  character(*), parameter :: Sl_thlp2_clubb = 'Sl_thlp2_clubb'
-  character(*), parameter :: Sl_wpthlp_clubb = 'Sl_wpthlp_clubb'
+  character(*), parameter :: Sl_wp2_clubb       = 'Sl_wp2_clubb'
+  character(*), parameter :: Sl_thlp2_clubb     = 'Sl_thlp2_clubb'
+  character(*), parameter :: Sl_wpthlp_clubb    = 'Sl_wpthlp_clubb'
+  character(*), parameter :: Sl_wprtp_clubb     = 'Sl_wprtp_clubb'
+  character(*), parameter :: Sl_upwp_clubb      = 'Sl_upwp_clubb'
+  character(*), parameter :: Sl_vpwp_clubb      = 'Sl_vpwp_clubb'
+  character(*), parameter :: Sl_rtp2_clubb      = 'Sl_rtp2_clubb'
+  character(*), parameter :: Sl_thlprtp_clubb   = 'Sl_thlprtp_clubb'
+  character(*), parameter :: Sl_wp3_clubb       = 'Sl_wp3_clubb' 
+  character(*), parameter :: Sl_wp4_clubb       = 'Sl_wp4_clubb'
+  character(*), parameter :: Sl_up2_clubb       = 'Sl_up2_clubb'
+  character(*), parameter :: Sl_vp2_clubb       = 'Sl_vp2_clubb'
+  character(*), parameter :: Sl_wp2thlp_clubb   = 'Sl_wp2thlp_clubb'
+  character(*), parameter :: Sl_wp2rtp_clubb    = 'Sl_wp2rtp_clubb'
+  character(*), parameter :: Sl_wprtp2_clubb    = 'Sl_wprtp2_clubb'
+  character(*), parameter :: Sl_wpthlp2_clubb   = 'Sl_wpthlp2_clubb'
+  character(*), parameter :: Sl_wpthlprtp_clubb = 'Sl_wpthlprtp_clubb'
 
   logical :: send_to_atm
   logical :: send_to_atm_clasp_fields = .true.
@@ -291,6 +305,20 @@ contains
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp2_clubb)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_thlp2_clubb)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wpthlp_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wprtp_clubb) 
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_upwp_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_vpwp_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_rtp2_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_thlprtp_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp3_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp4_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_up2_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_vp2_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp2thlp_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp2rtp_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wprtp2_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wpthlp2_clubb)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wpthlprtp_clubb)
        end if
 
     end if
@@ -831,6 +859,34 @@ contains
           call state_setexport_1d(exportState, Sl_thlp2_clubb, clubbmoments_inst%thlp2_grid(begg:), rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call state_setexport_1d(exportState, Sl_wpthlp_clubb, clubbmoments_inst%wpthlp_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wprtp_clubb, clubbmoments_inst%wpqp_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_upwp_clubb, clubbmoments_inst%upwp_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_vpwp_clubb, clubbmoments_inst%vpwp_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_rtp2_clubb, clubbmoments_inst%qp2_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_thlprtp_clubb, clubbmoments_inst%thlpqp_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wp3_clubb, clubbmoments_inst%wp3_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wp4_clubb, clubbmoments_inst%wp4_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_up2_clubb, clubbmoments_inst%up2_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_vp2_clubb, clubbmoments_inst%vp2_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wp2thlp_clubb, clubbmoments_inst%wp2thlp_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wp2rtp_clubb, clubbmoments_inst%wp2qp_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wprtp2_clubb, clubbmoments_inst%wpqp2_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wpthlp2_clubb, clubbmoments_inst%wpthlp2_grid(begg:), rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call state_setexport_1d(exportState, Sl_wpthlprtp_clubb, clubbmoments_inst%wpthlpqp_grid(begg:), rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
     endif
