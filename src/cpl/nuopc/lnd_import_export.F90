@@ -138,9 +138,15 @@ module lnd_import_export
   character(*), parameter :: Sl_tsrf_elev   = 'Sl_tsrf_elev'
   character(*), parameter :: Sl_topo_elev   = 'Sl_topo_elev'
   character(*), parameter :: Flgl_qice_elev = 'Flgl_qice_elev'
+<<<<<<< HEAD
   character(*), parameter :: Sl_wp2_clubb       = 'Sl_wp2_clubb'
   character(*), parameter :: Sl_thlp2_clubb     = 'Sl_thlp2_clubb'
   character(*), parameter :: Sl_wpthlp_clubb    = 'Sl_wpthlp_clubb'
+=======
+  character(*), parameter :: Sl_wp2_clubb   = 'Sl_wp2_clubb'
+  character(*), parameter :: Sl_thlp2_clubb = 'Sl_thlp2_clubb'
+  character(*), parameter :: Sl_wpthlp_clubb = 'Sl_wpthlp_clubb'
+>>>>>>> tempCLASP
   character(*), parameter :: Sl_wprtp_clubb     = 'Sl_wprtp_clubb'
   character(*), parameter :: Sl_upwp_clubb      = 'Sl_upwp_clubb'
   character(*), parameter :: Sl_vpwp_clubb      = 'Sl_vpwp_clubb'
@@ -149,7 +155,10 @@ module lnd_import_export
   character(*), parameter :: Sl_wp3_clubb       = 'Sl_wp3_clubb' 
   character(*), parameter :: Sl_wp4_clubb       = 'Sl_wp4_clubb'
   character(*), parameter :: Sl_up2_clubb       = 'Sl_up2_clubb'
+<<<<<<< HEAD
   character(*), parameter :: Sl_vp2_clubb       = 'Sl_vp2_clubb'
+=======
+>>>>>>> tempCLASP
   character(*), parameter :: Sl_wp2thlp_clubb   = 'Sl_wp2thlp_clubb'
   character(*), parameter :: Sl_wp2rtp_clubb    = 'Sl_wp2rtp_clubb'
   character(*), parameter :: Sl_wprtp2_clubb    = 'Sl_wprtp2_clubb'
@@ -313,7 +322,10 @@ contains
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp3_clubb)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp4_clubb)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_up2_clubb)
+<<<<<<< HEAD
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_vp2_clubb)
+=======
+>>>>>>> tempCLASP
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp2thlp_clubb)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wp2rtp_clubb)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_wprtp2_clubb)
