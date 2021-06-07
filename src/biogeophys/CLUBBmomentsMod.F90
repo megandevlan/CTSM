@@ -492,13 +492,10 @@ contains
 
                ! Compute the variance of horizontal velocity 
                ! -------------------------------------------
-                if (KH(p)>0.0_r8) then 
-                  up2(p) = (4.00_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
-                  vp2(p) = (1.75_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
                 if (KH(p)>=0.0_r8) then
                   wstar(p) = ((grav/Tv(p))*KH(p))**(1.0_r8/3.0_r8) 
                   up2(p)   = (4.0_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
-                  vp2(p) = (1.75_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
+                  vp2(p)   = (1.75_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
                else 
                   up2(p) = 4.00_r8 * ustar(p)**2.0_r8 
                   vp2(p) = 1.75_r8 * ustar(p)**2.0_r8

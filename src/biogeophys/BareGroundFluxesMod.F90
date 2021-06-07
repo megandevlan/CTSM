@@ -341,11 +341,6 @@ contains
             if (zeta(p)  >= 0._r8) then                   !stable
                zeta(p)  = min(zetamax,max(zeta(p) ,0.01_r8))
                um(p) = max(ur(p),0.1_r8)
-! +++ MDF      
-!  Copied from UrbanFluxesMod: wstar should be set and not missing in stable situations
-               ! BIG QUESTION: What should wc be in stable situations?
-               wstar(p) = 0.0_r8
-! --- MDF
             else                                      !unstable
                zeta(p)  = max(-100._r8,min(zeta(p) ,-0.01_r8))
                wstar(p) = beta(c)*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
