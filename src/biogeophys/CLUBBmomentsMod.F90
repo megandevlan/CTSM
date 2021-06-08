@@ -347,7 +347,7 @@ contains
 
     real(r8) :: KH(bounds%begp:bounds%endp)              ! Kinematic heat flux 
     real(r8) :: KL(bounds%begp:bounds%endp)              ! Humidity flux
-    real(r8) :: wstar(bounds%begp:bounds%endp)           ! Convective velocity scale [m/s]
+    !real(r8) :: wstar2(bounds%begp:bounds%endp)           ! Convective velocity scale [m/s]
     real(r8) :: wp2(bounds%begp:bounds%endp)             ! Vertical velocityvariance (m2/s2)
     real(r8) :: thlp2(bounds%begp:bounds%endp)           ! Temperature variance (K2)
     real(r8) :: upwp(bounds%begp:bounds%endp)            ! Zonal momentum flux (m2/s2)
@@ -385,7 +385,7 @@ contains
 
     associate(             &
          ustar                 => frictionvel_inst%ustar_patch                 , &  ! Input: [real(r8) (:)   ]  friction velocity [m/s]  
-         !wstar                 => frictionvel_inst%wstar_patch                 , &  ! Input: [real(r8) (:)   ]  convective velocity scale [m/s]
+         wstar                 => frictionvel_inst%wstar_patch                 , &  ! Input: [real(r8) (:)   ]  convective velocity scale [m/s]
          zeta                  => frictionvel_inst%zeta_patch                  , &  ! Input: [real(r8) (:)   ]  dimensionless stability parameter 
          forc_rho              => atm2lnd_inst%forc_rho_downscaled_col         , &  ! Input: [real(r8) (:)   ]  density (kg/m**3)   
          forc_pbot             => atm2lnd_inst%forc_pbot_downscaled_col        , &  ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
@@ -493,7 +493,7 @@ contains
                ! Compute the variance of horizontal velocity 
                ! -------------------------------------------
                 if (KH(p)>=0.0_r8) then
-                  wstar(p) = ((grav/Tv(p))*KH(p))**(1.0_r8/3.0_r8) 
+                  !wstar2(p) = ((grav/Tv(p))*KH(p))**(1.0_r8/3.0_r8) 
                   up2(p)   = (4.0_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
                   vp2(p)   = (1.75_r8 * ustar(p)**2.0_r8) + (0.3_r8 * wstar(p)**2.0_r8)
                else 

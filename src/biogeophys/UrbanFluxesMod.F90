@@ -659,8 +659,10 @@ contains
 
             if (zeta >= 0._r8) then                   !stable
                zeta = min(zetamax,max(zeta,0.01_r8))
+! +++ MDF
                ! (MDF) BIG QUESTION: What should wc be in stable situations?
-               wc = 0.5_r8   ! Using initialization value
+               wc = 0.5_r8
+! --- MDF
                um(l) = max(ur(l),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))

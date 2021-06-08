@@ -7,6 +7,9 @@ module BareGroundFluxesMod
   !
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
+!+++ MDF
+  use clm_varctl            , only : iulog
+!--- MDF
   use decompMod            , only : bounds_type
   use ch4Mod               , only : ch4_type
   use atm2lndType          , only : atm2lnd_type
@@ -341,6 +344,10 @@ contains
             if (zeta(p)  >= 0._r8) then                   !stable
                zeta(p)  = min(zetamax,max(zeta(p) ,0.01_r8))
                um(p) = max(ur(p),0.1_r8)
+! +++ MDF      
+               ! BIG QUESTION: What should wc be in stable situations?
+               wstar(p) = 0.5_r8
+! --- MDF
             else                                      !unstable
                zeta(p)  = max(-100._r8,min(zeta(p) ,-0.01_r8))
                wstar(p) = beta(c)*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8

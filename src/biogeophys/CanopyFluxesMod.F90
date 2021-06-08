@@ -1331,6 +1331,10 @@ bioms:   do f = 1, fn
                else
                   zeta(p) = min(zetamax,max(zeta(p),0.01_r8))
                endif
+! +++ MDF
+               ! BIG QUESTION: What should wc be in stable situations?
+               wstar(p) = 0.5_r8
+! --- MDF
                um(p) = max(ur(p),0.1_r8)
             else                     !unstable
                zeta(p) = max(-100._r8,min(zeta(p),-0.01_r8))
