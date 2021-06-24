@@ -2,33 +2,62 @@ module clm_initializeMod
 
   !-----------------------------------------------------------------------
   ! Performs land model initialization
+!<<<<<<< HEAD
   !-----------------------------------------------------------------------
+!=======
+  !
+  use shr_kind_mod    , only : r8 => shr_kind_r8
+  use shr_sys_mod     , only : shr_sys_flush
+  use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use spmdMod         , only : masterproc
+  use decompMod       , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
+  use abortutils      , only : endrun
+  use clm_varctl      , only : nsrest, nsrStartup, nsrContinue, nsrBranch
+  use clm_varctl      , only : is_cold_start, is_interpolated_start
+  use clm_varctl      , only : iulog
+  use clm_varctl      , only : use_lch4, use_cn, use_cndv, use_c13, use_c14, use_fates
+  use clm_varctl      , only : nhillslope
+  use clm_varctl      , only : use_soil_moisture_streams
+  use clm_instur      , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft, irrig_method, wt_glc_mec, topo_glc_mec, haslake, ncol_per_hillslope
+  use perf_mod        , only : t_startf, t_stopf
+  use readParamsMod   , only : readParameters
+  use ncdio_pio       , only : file_desc_t
+  use GridcellType    , only : grc           ! instance
+  use LandunitType    , only : lun           ! instance
+  use ColumnType      , only : col           ! instance
+  use PatchType       , only : patch         ! instance
+  use reweightMod     , only : reweight_wrapup
+  use filterMod       , only : allocFilters, filter, filter_inactive_and_active
+  use dynSubgridControlMod, only: dynSubgridControl_init, get_reset_dynbal_baselines
+  use CLMFatesInterfaceMod, only : CLMFatesGlobals
+  use SelfTestDriver, only : self_test_driver
+!>>>>>>> 5940bd23339b882fc02978c00da0310426f6cb30
 
-  use shr_kind_mod          , only : r8 => shr_kind_r8
-  use shr_sys_mod           , only : shr_sys_flush
-  use shr_log_mod           , only : errMsg => shr_log_errMsg
-  use spmdMod               , only : masterproc
-  use decompMod             , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
-  use abortutils            , only : endrun
-  use clm_varctl            , only : nsrest, nsrStartup, nsrContinue, nsrBranch
-  use clm_varctl            , only : is_cold_start, is_interpolated_start
-  use clm_varctl            , only : iulog
-  use clm_varctl            , only : use_lch4, use_cn, use_cndv, use_c13, use_c14, use_fates
-  use clm_varctl            , only : use_soil_moisture_streams
-  use clm_instur            , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft
-  use clm_instur            , only : irrig_method, wt_glc_mec, topo_glc_mec, haslake
-  use perf_mod              , only : t_startf, t_stopf
-  use readParamsMod         , only : readParameters
-  use ncdio_pio             , only : file_desc_t
-  use GridcellType          , only : grc           ! instance
-  use LandunitType          , only : lun           ! instance
-  use ColumnType            , only : col           ! instance
-  use PatchType             , only : patch         ! instance
-  use reweightMod           , only : reweight_wrapup
-  use filterMod             , only : allocFilters, filter, filter_inactive_and_active
-  use CLMFatesInterfaceMod  , only : CLMFatesGlobals
-  use dynSubgridControlMod  , only : dynSubgridControl_init, get_reset_dynbal_baselines
-  use SelfTestDriver        , only : self_test_driver
+  !use shr_kind_mod          , only : r8 => shr_kind_r8
+  !use shr_sys_mod           , only : shr_sys_flush
+  !use shr_log_mod           , only : errMsg => shr_log_errMsg
+  !use spmdMod               , only : masterproc
+  !use decompMod             , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
+  !use abortutils            , only : endrun
+  !use clm_varctl            , only : nsrest, nsrStartup, nsrContinue, nsrBranch
+  !use clm_varctl            , only : is_cold_start, is_interpolated_start
+  !use clm_varctl            , only : iulog
+  !use clm_varctl            , only : use_lch4, use_cn, use_cndv, use_c13, use_c14, use_fates
+  !use clm_varctl            , only : use_soil_moisture_streams
+  !use clm_instur            , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft
+  !use clm_instur            , only : irrig_method, wt_glc_mec, topo_glc_mec, haslake
+  !use perf_mod              , only : t_startf, t_stopf
+  !use readParamsMod         , only : readParameters
+  !use ncdio_pio             , only : file_desc_t
+  !use GridcellType          , only : grc           ! instance
+  !use LandunitType          , only : lun           ! instance
+  !use ColumnType            , only : col           ! instance
+  !use PatchType             , only : patch         ! instance
+  !use reweightMod           , only : reweight_wrapup
+  !use filterMod             , only : allocFilters, filter, filter_inactive_and_active
+  !use CLMFatesInterfaceMod  , only : CLMFatesGlobals
+  !use dynSubgridControlMod  , only : dynSubgridControl_init, get_reset_dynbal_baselines
+  !use SelfTestDriver        , only : self_test_driver
   use SoilMoistureStreamMod , only : PrescribedSoilMoistureInit
   use clm_instMod
   !
@@ -50,16 +79,34 @@ contains
     ! CLM initialization first phase
     !
     ! !USES:
-    use clm_varpar           , only: clm_varpar_init
-    use clm_varcon           , only: clm_varcon_init
-    use landunit_varcon      , only: landunit_varcon_init
-    use clm_varctl           , only: fsurdat, version
-    use surfrdMod            , only: surfrd_get_num_patches
-    use controlMod           , only: control_init, control_print, NLFilename
-    use ncdio_pio            , only: ncd_pio_init
-    use initGridCellsMod     , only: initGridCells
-    use UrbanParamsType      , only: IsSimpleBuildTemp
+!<<<<<<< HEAD
+    !use clm_varpar           , only: clm_varpar_init
+    !use clm_varcon           , only: clm_varcon_init
+    !use landunit_varcon      , only: landunit_varcon_init
+    !use clm_varctl           , only: fsurdat, version
+    !use surfrdMod            , only: surfrd_get_num_patches
+    !use controlMod           , only: control_init, control_print, NLFilename
+    !use ncdio_pio            , only: ncd_pio_init
+    !use initGridCellsMod     , only: initGridCells
+    !use UrbanParamsType      , only: IsSimpleBuildTemp
     use dynSubgridControlMod , only: dynSubgridControl_init
+!=======
+    use clm_varpar       , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec, nlevsoi
+    use clm_varcon       , only: clm_varcon_init
+    use landunit_varcon  , only: landunit_varcon_init, max_lunit
+    use clm_varctl       , only: fsurdat, fatmlndfrc, noland, version  
+    use clm_varctl       , only: use_hillslope
+    use pftconMod        , only: pftcon       
+    use decompInitMod    , only: decompInit_lnd, decompInit_clumps, decompInit_glcp, decompInit_lnd3D
+    use decompInitMod    , only: decompInit_ocn
+    use domainMod        , only: domain_check, ldomain, domain_init
+    use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_data, surfrd_get_num_patches
+    use controlMod       , only: control_init, control_print, NLFilename
+    use ncdio_pio        , only: ncd_pio_init
+    use initGridCellsMod , only: initGridCells
+    use ch4varcon        , only: ch4conrd
+    use UrbanParamsType  , only: UrbanInput, IsSimpleBuildTemp
+!>>>>>>> 5940bd23339b882fc02978c00da0310426f6cb30
     !
     ! !ARGUMENTS
     integer, intent(in) :: dtime    ! model time step (seconds)
@@ -214,7 +261,13 @@ contains
     allocate (wt_glc_mec   (begg:endg, maxpatch_glcmec     ))
     allocate (topo_glc_mec (begg:endg, maxpatch_glcmec     ))
     allocate (haslake      (begg:endg                      ))
+!<<<<<<< HEAD
 
+!=======
+    if(use_hillslope) then 
+       allocate (ncol_per_hillslope  (begg:endg                      ))
+    endif
+!>>>>>>> 5940bd23339b882fc02978c00da0310426f6cb30
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
     call pftcon%Init()
@@ -261,7 +314,7 @@ contains
 
     ! Set filters
     call allocFilters()
-
+ 
     nclumps = get_proc_clumps()
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
@@ -284,6 +337,7 @@ contains
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
     deallocate (wt_lunit, wt_cft, wt_glc_mec, haslake)
+    if(use_hillslope)  deallocate (ncol_per_hillslope)
 
     ! Determine processor bounds and clumps for this processor
     call get_proc_bounds(bounds_proc)
