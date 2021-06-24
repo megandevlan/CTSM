@@ -12,7 +12,7 @@ module histFileMod
   use shr_sys_mod    , only : shr_sys_flush
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog, use_vertsoilc, use_fates, compname
+  use clm_varctl     , only : iulog, use_vertsoilc, use_fates, compname, use_hillslope
   use clm_varcon     , only : spval, ispval, dzsoi_decomp
   use clm_varcon     , only : grlnd, nameg, namel, namec, namep, nameCohort
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
@@ -2245,7 +2245,6 @@ contains
     call ncd_defdim(lnfid, 'string_length', hist_dim_name_length, strlen_dimid)
     call ncd_defdim(lnfid, 'scale_type_string_length', scale_type_strlen, dimid)
     call ncd_defdim( lnfid, 'levdcmp', nlevdecomp_full, dimid)
-    
 
     if(use_fates)then
        call ncd_defdim(lnfid, 'fates_levscag', nlevsclass * nlevage, dimid)
@@ -2449,7 +2448,7 @@ contains
     character(len=*),parameter :: varnamesl(nfldsl) = (/ &
                                                           'ZLAKE ', &
                                                           'DZLAKE' &
-                                                      /)
+                                                          /)
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_ALL_FL((ubound(watsat_col) == (/bounds%endc, nlevmaxurbgrnd/)), sourcefile, __LINE__)
@@ -2772,6 +2771,36 @@ contains
           call ncd_defvar(varname='levdcmp', xtype=tape(t)%ncprec, dim1name='levdcmp', &
                long_name='coordinate levels for soil decomposition variables', units='m', ncid=nfid(t))
 
+          if(use_hillslope .and. .not.tape(t)%dov2xy)then
+             call ncd_defvar(varname='hslp_distance', xtype=ncd_double, &
+                  dim1name=namec, long_name='hillslope column distance', &
+                  units='m', ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_width', xtype=ncd_double, &
+                  dim1name=namec, long_name='hillslope column width', &
+                  units='m', ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_area', xtype=ncd_double, &
+                  dim1name=namec, long_name='hillslope column area', &
+                  units='m', ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_elev', xtype=ncd_double, &
+                  dim1name=namec, long_name='hillslope column elevation', &
+                  units='m', ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_slope', xtype=ncd_double, &
+                  dim1name=namec, long_name='hillslope column slope', &
+                  units='m', ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_aspect', xtype=ncd_double, &
+                  dim1name=namec, long_name='hillslope column aspect', &
+                  units='m', ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_index', xtype=ncd_int, &
+                  dim1name=namec, long_name='hillslope index', &
+                  ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_cold', xtype=ncd_int, &
+                  dim1name=namec, long_name='hillslope downhill column index', &
+                  ncid=nfid(t))             
+             call ncd_defvar(varname='hslp_colu', xtype=ncd_int, &
+                  dim1name=namec, long_name='hillslope uphill column index', &
+                  ncid=nfid(t))             
+          end if
+
           if(use_fates)then
 
              call ncd_defvar(varname='fates_levscls', xtype=tape(t)%ncprec, dim1name='fates_levscls', &
@@ -2843,6 +2872,19 @@ contains
              zsoi_1d(1) = 1._r8
              call ncd_io(varname='levdcmp', data=zsoi_1d, ncid=nfid(t), flag='write')
           end if
+
+          if (use_hillslope .and. .not.tape(t)%dov2xy) then             
+             call ncd_io(varname='hslp_distance' , data=col%hill_distance, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_width' , data=col%hill_width, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_area' , data=col%hill_area, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_elev' , data=col%hill_elev, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_slope' , data=col%hill_slope, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_aspect' , data=col%hill_aspect, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_index' , data=col%hillslope_ndx, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_cold' , data=col%cold, dim1name=namec, ncid=nfid(t), flag='write')
+             call ncd_io(varname='hslp_colu' , data=col%colu, dim1name=namec, ncid=nfid(t), flag='write')
+          endif
+
           if(use_fates)then
              call ncd_io(varname='fates_scmap_levscag',data=fates_hdim_scmap_levscag, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_agmap_levscag',data=fates_hdim_agmap_levscag, ncid=nfid(t), flag='write')
@@ -3372,6 +3414,9 @@ contains
           call ncd_defvar(varname='cols1d_active', xtype=ncd_log, dim1name=namec, &
                long_name='true => do computations on this column', ifill_value=0, ncid=ncid)
 
+          call ncd_defvar(varname='cols1d_nbedrock', xtype=ncd_int, dim1name=namec, &
+               long_name='column bedrock depth index', ncid=ncid)
+
           ! Define patch info
 
           call ncd_defvar(varname='pfts1d_lon', xtype=ncd_double, dim1name=namep, &
@@ -3510,6 +3555,7 @@ contains
        call ncd_io(varname='cols1d_itype_lunit', data=icarr    , dim1name=namec, ncid=ncid, flag='write')
 
        call ncd_io(varname='cols1d_active' , data=col%active  , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_nbedrock', data=col%nbedrock , dim1name=namec, ncid=ncid, flag='write')
 
        ! Write patch info
 
@@ -3696,7 +3742,7 @@ contains
              call htape_timeconst(t, mode='define')
 
              ! Define 3D time-constant field variables on first history tapes
-             if ( do_3Dtconst) then
+             if ( do_3Dtconst .and. t == 1) then
                 call htape_timeconst3D(t, &
                      bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='define')
                 TimeConst3DVars_Filename = trim(locfnh(t))
@@ -3715,7 +3761,7 @@ contains
           call htape_timeconst(t, mode='write')
 
           ! Write 3D time constant history variables to first history tapes
-          if ( do_3Dtconst .and. tape(t)%ntimes == 1 )then
+          if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then
              call htape_timeconst3D(t, &
                   bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='write')
              do_3Dtconst = .false.
@@ -4167,7 +4213,6 @@ contains
        max_nflds = max_nFields()
 
        start(1)=1
-
 
        !
        ! Add history namelist data to each history restart tape
