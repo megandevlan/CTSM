@@ -17,6 +17,7 @@ module clm_initializeMod
   use clm_varctl      , only : iulog
   use clm_varctl      , only : use_lch4, use_cn, use_cndv, use_c13, use_c14, use_fates
   use clm_varctl      , only : nhillslope
+  use clm_varctl      , only: use_hillslope
   use clm_varctl      , only : use_soil_moisture_streams
   use clm_instur      , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft, irrig_method, wt_glc_mec, topo_glc_mec, haslake, ncol_per_hillslope
   use perf_mod        , only : t_startf, t_stopf
