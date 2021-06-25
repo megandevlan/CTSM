@@ -8,7 +8,8 @@ module clm_instMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use decompMod       , only : bounds_type
   use clm_varpar      , only : ndecomp_pools, nlevdecomp_full
-  use clm_varctl      , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_hillslope
+  use clm_varctl      , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates
+  use clm_varctl      , only : use_hillslope
   use clm_varctl      , only : use_century_decomp, use_crop, snow_cover_fraction_method, paramfile
   use clm_varctl      , only : compute_CLUBB_HMG, compute_CLUBB_HTG
   use clm_varcon      , only : bdsno, c13ratio, c14ratio
@@ -333,7 +334,7 @@ contains
     call saturated_excess_runoff_inst%Init(bounds)
     call infiltration_excess_runoff_inst%Init(bounds)
 
-    if(use_hillslope) then 
+    if (use_hillslope) then 
        call InitHillslope(bounds, fsurdat)
     endif
 
