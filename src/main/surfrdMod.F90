@@ -339,6 +339,11 @@ contains
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: pftm NOT on surface dataset'//errMsg(sourcefile, __LINE__))
 
+    ! scs
+    call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, & 
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( msg=' ERROR: AREA NOT on surface dataset'//errMsg(sourcefile, __LINE__))
+
     ! Check if fsurdat grid is "close" to fatmlndfrc grid, exit if lats/lon > 0.001
 
     call check_var(ncid=ncid, varname='xc', readvar=readvar)
