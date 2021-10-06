@@ -332,7 +332,7 @@ contains
     integer  :: c,g,l                                    ! Column/gridcell/landunit indices
     real(r8) :: rhoair                                   ! Air density
     real(r8) :: sfcP                                     ! Surface atm pressure (Pa) 
-    real(r8) :: theta                                    ! Potential temperature (K) 
+    !real(r8) :: theta                                    ! Potential temperature (K) 
     real(r8) :: eflx_sh_pr_conversionPatch               ! Patch level eflx_sh correction term 
     real(r8) :: eflx_sh_il_conversionPatch               ! Patch level eflx_sh correction term
     real(r8) :: eflx_dynbal_grcPatch                     ! Patch level eflx_sh correction term
@@ -354,9 +354,9 @@ contains
     real(r8) :: vpwp(bounds%begp:bounds%endp)            ! Meridional momentum flux (m2/s2)
     real(r8) :: qp2(bounds%begp:bounds%endp)             ! Specific humidity variance (kg2/kg2)
     real(r8) :: thlpqp(bounds%begp:bounds%endp)          ! Covariance of temperature and humidity (K * kg/kg)
-    real(r8) :: Tv(bounds%begp:bounds%endp)              ! Virtual temperature at the surface (column=patch level)
+    real(r8) :: theta(bounds%begp:bounds%endp)              ! Virtual temperature at the surface (column=patch level)
     real(r8) :: thlp2_grid(bounds%begg:bounds%endg)      ! Gridcell weighted mean of THLP2
-    real(r8) :: theta_grid(bounds%begg:bounds%endg)      ! Gridcell weighted mean of THETA (Tv)
+    real(r8) :: theta_grid(bounds%begg:bounds%endg)      ! Gridcell weighted mean of THETA (theta)
     real(r8) :: theta_sqr(bounds%begp:bounds%endp)       ! Patch level difference in THETA from grid mean 
     real(r8) :: theta_sqr_grid(bounds%begg:bounds%endg)  ! Gridcell weighted mean of patch THETA differences 
     real(r8) :: qp2_grid(bounds%begg:bounds%endg)        ! Gridcell weighted mean of QP2
@@ -448,9 +448,9 @@ contains
                end if 
 
                ! Also compute virtual temperature, which we'll use as 'theta' 
-               theta       = t_ref2m(p)*(100000.0_r8/sfcP)**0.286_r8
+               theta(p)       = t_ref2m(p)*(100000.0_r8/sfcP)**0.286_r8
                !Tv(p)       = (1.0_r8 + 0.61_r8*q_ref2m(p))*t_ref2m(p)
-               Tv(p)       = (1.0_r8 + 0.61_r8*q_ref2m(p))*theta
+               !Tv(p)       = (1.0_r8 + 0.61_r8*q_ref2m(p))*theta
 
                ! Compute the variance of total water specific humidity
                ! -----------------------------------------------------
@@ -608,7 +608,7 @@ contains
              p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
        call  p2g(bounds, &
-             Tv(bounds%begp:bounds%endp), &
+             theta(bounds%begp:bounds%endp), &
              theta_grid(bounds%begg:bounds%endg), &
              p2c_scale_type='unity', c2l_scale_type='unity',l2g_scale_type='unity')
 
@@ -634,22 +634,22 @@ contains
                 g = patch%gridcell(p)
              
                 ! Compute squared difference between patch and grid mean temperature 
-                theta_sqr(p) = (Tv(p) - theta_grid(g))**2.0_r8
+                theta_sqr(p) = (theta(p) - theta_grid(g))**2.0_r8
 
                 ! Compute squared diff between patch and grid mean humidity
                 q_sqr(p) = (q_ref2m(p) - q_grid(g))**2.0_r8
 
                 ! Compute diff between patch and grid mean humidity and temperature 
-                thlpqp_sqr(p) = (Tv(p) - theta_grid(g)) * (q_ref2m(p) - q_grid(g))
+                thlpqp_sqr(p) = (theta(p) - theta_grid(g)) * (q_ref2m(p) - q_grid(g))
     
                 ! Compute patch level covariances between variances and other variables
-                wp2thlp(p) = (Tv(p) - theta_grid(g))*clubbmoments_inst%wp2_grid(g)
+                wp2thlp(p) = (theta(p) - theta_grid(g))*clubbmoments_inst%wp2_grid(g)
                 wp2qp(p)   = (q_ref2m(p) - q_grid(g))*clubbmoments_inst%qp2_grid(g)
                 wpqp2(p)   = (q_ref2m(p) - q_grid(g))*KL(p)                
-                wpthlp2(p) = (Tv(p) - theta_grid(g))*KH(p)
+                wpthlp2(p) = (theta(p) - theta_grid(g))*KH(p)
            
                 ! Compute terms that go into means of wpthlpqp
-                wpthlpqp_term1(p) = (Tv(p) - theta_grid(g))*KL(p)
+                wpthlpqp_term1(p) = (theta(p) - theta_grid(g))*KL(p)
                 wpthlpqp_term2(p) = (q_ref2m(p) - q_grid(g))*KH(p)
  
              end if
