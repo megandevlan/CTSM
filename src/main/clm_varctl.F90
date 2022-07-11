@@ -319,8 +319,12 @@ module clm_varctl
   !----------------------------------------------------------
   ! CLASP switches to compute CLUBB's surface moments 
   !----------------------------------------------------------
-  logical, public :: compute_CLUBB_HMG = .false.
-  logical, public :: compute_CLUBB_HTG = .false.
+  logical,  public :: compute_CLUBB_HMG = .false.
+  logical,  public :: compute_CLUBB_HTG = .false.
+!+++ MDF
+  real(r8), public :: HTGmult_thlVariance = 1.0_r8 
+  real(r8), public :: HTGmult_qtVariance  = 1.0_r8
+!--- MDF
 
   !
   !----------------------------------------------------------

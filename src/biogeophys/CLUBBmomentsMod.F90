@@ -309,7 +309,11 @@ contains
   !-----------------------------------------------------------------------
   subroutine CLUBBmoments(bounds,clubbmoments_inst,frictionvel_inst,&
        energyflux_inst,atm2lnd_inst,lnd2atm_inst,&
-       waterdiagnosticbulk_inst,temperature_inst)
+       waterdiagnosticbulk_inst,temperature_inst,&
+!+++ MDF
+       HTGmult_thlVariance, HTGmult_qtVariance)
+!--- MDF
+
     !
     ! !DESCRIPTION:
     !
@@ -327,6 +331,11 @@ contains
     type(lnd2atm_type)                     , intent(in)            :: lnd2atm_inst
     type(waterdiagnosticbulk_type)         , intent(in)            :: waterdiagnosticbulk_inst
     type(temperature_type)                 , intent(in)            :: temperature_inst
+!+++ MDF
+    real(r8)                               , intent(in)            :: HTGmult_thlVariance
+    real(r8)                               , intent(in)            :: HTGmult_qtVariance
+!--- MDF
+
     !  !LOCAL VARIABLES:
     integer  :: p                                        ! Patch indices
     integer  :: c,g,l                                    ! Column/gridcell/landunit indices
@@ -634,13 +643,13 @@ contains
                 g = patch%gridcell(p)
              
                 ! Compute squared difference between patch and grid mean temperature 
-                theta_sqr(p) = (theta(p) - theta_grid(g))**2.0_r8
+                theta_sqr(p) = ((theta(p) - theta_grid(g))**2.0_r8)*HTGmult_thlVariance
 
                 ! Compute squared diff between patch and grid mean humidity
-                q_sqr(p) = (q_ref2m(p) - q_grid(g))**2.0_r8
+                q_sqr(p) = ((q_ref2m(p) - q_grid(g))**2.0_r8)*HTGmult_qtVariance
 
                 ! Compute diff between patch and grid mean humidity and temperature 
-                thlpqp_sqr(p) = (theta(p) - theta_grid(g)) * (q_ref2m(p) - q_grid(g))
+                thlpqp_sqr(p) = (theta(p) - theta_grid(g)) * (q_ref2m(p) - q_grid(g)) * SQRT(HTGmult_thlVariance)*SQRT(HTGmult_qtVariance)
     
                 ! Compute patch level covariances between variances and other variables
                 wp2thlp(p) = (theta(p) - theta_grid(g))*clubbmoments_inst%wp2_grid(g)

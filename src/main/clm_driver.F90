@@ -14,6 +14,9 @@ module clm_driver
   use clm_varctl             , only : use_crop, irrigate, ndep_from_cpl
   use clm_varctl             , only : use_soil_moisture_streams
   use clm_varctl             , only : compute_CLUBB_HMG, compute_CLUBB_HTG
+!+++ MDF
+  use clm_varctl             , only : HTGmult_thlVariance, HTGmult_qtVariance
+!--- MDF
   use clm_time_manager       , only : get_nstep, is_beg_curr_day
   use clm_time_manager       , only : get_prev_date, is_first_step
   use clm_varpar             , only : nlevsno, nlevgrnd
@@ -847,7 +850,10 @@ contains
        if (compute_CLUBB_HMG .OR. compute_CLUBB_HTG) then 
           call CLUBBmoments(bounds_clump,clubbmoments_inst,frictionvel_inst,energyflux_inst, &
                atm2lnd_inst,lnd2atm_inst,water_inst%waterdiagnosticbulk_inst, &
-               temperature_inst)
+               temperature_inst, &
+!+++ MDF
+               HTGmult_thlVariance, HTGmult_qtVariance)
+!--- MDF
        end if 
 
        ! ============================================================================

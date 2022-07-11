@@ -279,7 +279,9 @@ contains
 
     ! Flags for computing CLUBB moments (part of CLASP)
     namelist /clm_inparm/ compute_CLUBB_HMG, compute_CLUBB_HTG
-
+!+++ MDF 
+    namelist /clm_inparm/ HTGmult_thlVariance, HTGmult_qtVariance
+!--- MDF
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -649,6 +651,10 @@ contains
     ! CLUBB moments variables 
     call mpi_bcast (compute_CLUBB_HMG, 1, MPI_LOGICAL, 0, mpicom, ier) 
     call mpi_bcast (compute_CLUBB_HTG, 1, MPI_LOGICAL, 0, mpicom, ier)
+!+++ MDF
+    call mpi_bcast (HTGmult_thlVariance, 1, MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (HTGmult_qtVariance, 1, MPI_REAL8, 0, mpicom, ier)
+!--- MDF
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
@@ -894,6 +900,10 @@ contains
     write(iulog,*) '    use_SSRE = ', use_SSRE
     write(iulog,*) '    compute_CLUBB_HMG = ', compute_CLUBB_HMG 
     write(iulog,*) '    compute_CLUBB_HTG = ', compute_CLUBB_HTG
+!+++ MDF 
+    write(iulog,*) '    CLUBB_HTGmultiplier_tempVariance = ', HTGmult_thlVariance
+    write(iulog,*) '    CLUBB_HTGmultiplier_moistureVariance = ', HTGmult_qtVariance
+!--- MDF
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     if (fsurdat == ' ') then
