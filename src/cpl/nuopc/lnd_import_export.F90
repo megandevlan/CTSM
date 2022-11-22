@@ -140,10 +140,18 @@ module lnd_import_export
   character(*), parameter :: Sl_tsrf_elev   = 'Sl_tsrf_elev'
   character(*), parameter :: Sl_topo_elev   = 'Sl_topo_elev'
   character(*), parameter :: Flgl_qice_elev = 'Flgl_qice_elev'
+!+++ MDF
+  character(*), parameter :: Fl_shflxPatch = 'Fl_shflxPatch'
+  character(*), parameter :: Fl_lhflxPatch = 'Fl_lhflxPatch'
+  character(*), parameter :: Sl_fvPatch    = 'Sl_fvPatch'
+  character(*), parameter :: Sl_areaPatch  = 'Sl_areaPatch'
+!--- MDF
 
   logical :: send_to_atm
   logical :: send_lnd2glc
-
+!+++ MDF
+  logical :: send_patch2atm = .true.
+!--- MDF
 
   character(*),parameter :: F01 = "('(lnd_import_export) ',a,i5,2x,i5,2x,d21.14)"
   character(*),parameter :: u_FILE_u = &
@@ -160,6 +168,11 @@ contains
     use shr_fire_emis_mod , only : shr_fire_emis_readnl
     use clm_varctl        , only : ndep_from_cpl
     use controlMod        , only : NLFilename
+    !+++ MDF 
+    use clm_varctl        , only: fsurdat
+    use surfrdMod         , only: surfrd_get_num_patches
+    use clm_varpar        , only : mxpft,maxsoil_patches
+    !--- MDF
 
     ! input/output variables
     type(ESMF_GridComp)            :: gcomp
@@ -178,6 +191,12 @@ contains
     integer           :: n, num
     logical           :: send_co2_to_atm = .false.
     logical           :: recv_co2_fr_atm = .false.
+!+++ MDF
+    integer           :: actual_maxsoil_patches  ! value from surface dataset 
+    integer           :: actual_numcft  ! numcft from sfc dataset
+    type(bounds_type)      :: bounds                          ! bounds
+!--- MDF
+
 
     character(len=*), parameter :: subname='(lnd_import_export:advertise_fields)'
     !-------------------------------------------------------------------------------
@@ -195,6 +214,16 @@ contains
     if (glc_nec < 1) then
        call shr_sys_abort('ERROR: In CLM4.5 and later, glc_nec must be at least 1.')
     end if
+
+!+++ MDF
+    ! Determine number of patches 
+    call get_proc_bounds(bounds)
+    write(iulog,*)'MDF: Maybe we got bounds okay - what is bound begp:',bounds%begp 
+    write(iulog,*)'MDF: This is the file name for fsurdat: ',fsurdat
+    !call surfrd_get_num_patches(fsurdat, actual_maxsoil_patches, actual_numcft)
+    !write(iulog,*)'MDF: This is the value of actual_maxsoil_patches:',actual_maxsoil_patches
+    !npatch = maxsoil_patches
+!--- MDF
 
     !--------------------------------
     ! Advertise export fields
@@ -288,6 +317,19 @@ contains
        if (carma_fields /= ' ') then
           call fldlist_add(fldsFrLnd_num, fldsFrlnd, Sl_soilw) ! optional for carma
        end if
+       !+++ MDF
+       write(iulog,*)'MDF: This is in lnd_import_export... line 310'
+       if (send_patch2atm) then ! send patch level data for use in CLASP+CLUBBMF
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_shflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
+          write(iulog,*)'MDF: This is the value of endp: ',bounds%endp
+          write(iulog,*)'MDF: Max number of PFTS, a cludge for now, set to',mxpft
+
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_lhflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_fvPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_areaPatch,  ungridded_lbound=1, ungridded_ubound=mxpft)
+
+       end if
+       !--- MDF
     end if
 
     ! export to rof
@@ -848,7 +890,40 @@ contains
                init_spval=.false., rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
+!+++ MDF
+       write(iulog,*)'MDF: Made it to line 877 in import_export!'
+       if (fldchk(exportState, Fl_shflxPatch)) then ! patch SHFLX from land 
+          write(iulog,*)'MDF: And line 879, so the value of Fl_shflxPatch is good to go...'
+          call state_setexport_2d(exportState, Fl_shflxPatch, lnd2atm_inst%eflx_sh_tot_patch(begg:,bounds%begp:), &
+               init_spval=.false., minus = .true., rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of lnd2atm_inst_shTotPatch: ',lnd2atm_inst%eflx_sh_tot_patch(begg:,bounds%begp:bounds%endp)
+
+       if (fldchk(exportState, Fl_lhflxPatch)) then ! patch LHFLX from land 
+          call state_setexport_2d(exportState, Fl_lhflxPatch,lnd2atm_inst%eflx_lh_tot_patch(begg:,bounds%begp:), &
+                init_spval=.false., minus = .true., rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of eflx_lh_tot_patch:',lnd2atm_inst%eflx_lh_tot_patch(begg:,bounds%begp:bounds%endp)
+
+       if (fldchk(exportState, Sl_fvPatch)) then ! patch ustar from land 
+          call state_setexport_2d(exportState, Sl_fvPatch,lnd2atm_inst%fv_patch(begg:,bounds%begp:), &
+                init_spval=.false., rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of fv_patch:',lnd2atm_inst%fv_patch(begg:,bounds%begp:bounds%endp)
+
+       if (fldchk(exportState, Sl_areaPatch)) then ! patch area from land 
+          call state_setexport_2d(exportState, Sl_areaPatch,lnd2atm_inst%area_patch(begg:,bounds%begp:), &
+                init_spval=.false., rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of area_patch:',lnd2atm_inst%area_patch(begg:,bounds%begp:bounds%endp)
+
+!---MDF
     endif
+
 
     ! -----------------------
     ! output to river

@@ -10,7 +10,10 @@ module lnd2atmType
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use abortutils    , only : endrun
   use decompMod     , only : bounds_type
-  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  !use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+!+++ MDF
+  use clm_varpar    , only : numrad, ndst, nlevgrnd,maxsoil_patches,mxpft !ndst = number of dust bins. 
+!--- MDF
   use clm_varcon    , only : spval
   use clm_varctl    , only : iulog, use_lch4
   use shr_megan_mod , only : shr_megan_mechcomps_n
@@ -58,6 +61,12 @@ module lnd2atmType
      real(r8), pointer :: fireflx_grc        (:,:) => null() ! Wild Fire Emissions
      real(r8), pointer :: fireztop_grc       (:)   => null() ! Wild Fire Emissions vertical distribution top
      real(r8), pointer :: ch4_surf_flux_tot_grc(:) => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
+!+++ MDF
+     real(r8), pointer :: eflx_sh_tot_patch (:,:) => null() ! total sensible HF per patch (W/m**2) [+ to atm]
+     real(r8), pointer :: eflx_lh_tot_patch (:,:) => null() ! total latent HF per patch (W/m**2) [+ to atm]
+     real(r8), pointer :: fv_patch          (:,:) => null() ! ustar per patch (friction velocity [m/s])    
+     real(r8), pointer :: area_patch        (:,:) => null() ! grid area per patch (fraction)    
+!--- MDF 
      ! lnd->rof
 
    contains
@@ -128,10 +137,18 @@ contains
     real(r8) :: ival  = 0.0_r8  ! initial value
     integer  :: begc, endc
     integer  :: begg, endg
+!+++ MDF
+    real(r8) :: missVal = 9999 ! missing value to initialize patch data
+    integer  :: begp, endp
+!--- MDF
     !------------------------------------------------------------------------
 
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
+!+++ MDF
+    write(iulog,*)'MDF: now in lnd2atmType'
+    begp = bounds%begp; endp = bounds%endp
+!--- MDF
 
     allocate(this%t_rad_grc          (begg:endg))            ; this%t_rad_grc          (:)   =ival
     allocate(this%t_ref2m_grc        (begg:endg))            ; this%t_ref2m_grc        (:)   =ival
@@ -153,6 +170,13 @@ contains
     allocate(this%fv_grc             (begg:endg))            ; this%fv_grc             (:)   =ival
     allocate(this%flxdst_grc         (begg:endg,1:ndst))     ; this%flxdst_grc         (:,:) =ival
     allocate(this%ch4_surf_flux_tot_grc(begg:endg))          ; this%ch4_surf_flux_tot_grc(:) =ival
+   !+++ MDF
+   allocate(this%eflx_sh_tot_patch (begg:endg, 1:mxpft))    ; this%eflx_sh_tot_patch  (:,:) =missVal
+   allocate(this%eflx_lh_tot_patch (begg:endg, 1:mxpft))    ; this%eflx_lh_tot_patch  (:,:) =missVal
+   allocate(this%fv_patch          (begg:endg, 1:mxpft))    ; this%fv_patch           (:,:) =missVal
+   allocate(this%area_patch        (begg:endg, 1:mxpft))    ; this%area_patch         (:,:) =missVal
+
+   !--- MDF
 
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival

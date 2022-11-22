@@ -11,6 +11,9 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use shr_fire_emis_mod    , only : shr_fire_emis_mechcomps_n
   use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevmaxurbgrnd !ndst = number of dust bins.
+  !+++ MDF 
+  use PatchType            , only : patch
+  !--- MDF
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_lch4
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
@@ -180,6 +183,9 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: c, g  ! indices
+!+++ MDF 
+    integer  :: p  ! indices
+!--- MDF
     real(r8) :: eflx_sh_ice_to_liq_grc(bounds%begg:bounds%endg) ! sensible heat flux generated from the ice to liquid conversion, averaged to gridcell
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
@@ -199,7 +205,11 @@ contains
     !----------------------------------------------------
     ! lnd -> atm
     !----------------------------------------------------
-    
+
+    !+++MDF 
+    !write(iulog,*)'MDF: now in lnd2atmMod'
+    !---MDF
+
     ! First, compute the "minimal" set of fields.
     call lnd2atm_minimal(bounds, &
          water_inst, surfalb_inst, energyflux_inst, lnd2atm_inst)
@@ -331,6 +341,34 @@ contains
          dust_inst%flx_mss_vrt_dst_patch(bounds%begp:bounds%endp, :), &
          lnd2atm_inst%flxdst_grc        (bounds%begg:bounds%endg, :), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    !+++ MDF
+    ! Subgrid flux
+    !write(iulog,*)'MDF: Hey look, you made it this far: line 345'
+    do g = bounds%begg,bounds%endg
+       do c = bounds%begc,bounds%endc
+          do p = bounds%begp,bounds%endp
+             lnd2atm_inst%eflx_sh_tot_patch(g,p) = &
+                  energyflux_inst%eflx_sh_tot_patch(p) + &
+                  energyflux_inst%eflx_sh_precip_conversion_col(c) + &
+                  lnd2atm_inst%eflx_sh_ice_to_liq_col(c) - &
+                  energyflux_inst%eflx_dynbal_grc(g)
+
+             lnd2atm_inst%eflx_lh_tot_patch(g,p) = &
+                  energyflux_inst%eflx_lh_tot_patch(p)
+
+             lnd2atm_inst%fv_patch(g,p) = &
+                  frictionvel_inst%fv_patch(p)
+
+             lnd2atm_inst%area_patch(g,p) = &
+                  patch%wtgcell(p)
+
+             write(iulog,*)'MDF: this is the patch type and weight: ',patch%itype(p),patch%wtgcell(p)
+          end do
+       end do
+    end do
+    !--- MDF 
+
 
     !----------------------------------------------------
     ! lnd -> rof
