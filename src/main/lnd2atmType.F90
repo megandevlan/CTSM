@@ -63,9 +63,11 @@ module lnd2atmType
      real(r8), pointer :: ch4_surf_flux_tot_grc(:) => null() ! net CH4 flux (kg C/m**2/s) [+ to atm]
 !+++ MDF
      real(r8), pointer :: eflx_sh_tot_patch (:,:) => null() ! total sensible HF per patch (W/m**2) [+ to atm]
-     real(r8), pointer :: eflx_lh_tot_patch (:,:) => null() ! total latent HF per patch (W/m**2) [+ to atm]
+     real(r8), pointer :: qflx_evap_tot_patch (:,:) => null() ! total latent HF per patch (W/m**2) [+ to atm]
      real(r8), pointer :: fv_patch          (:,:) => null() ! ustar per patch (friction velocity [m/s])    
      real(r8), pointer :: area_patch        (:,:) => null() ! grid area per patch (fraction)    
+     real(r8), pointer :: ts_patch          (:,:) => null() ! Ts per patch     
+
 !--- MDF 
      ! lnd->rof
 
@@ -146,7 +148,7 @@ contains
     begc = bounds%begc; endc = bounds%endc
     begg = bounds%begg; endg = bounds%endg
 !+++ MDF
-    write(iulog,*)'MDF: now in lnd2atmType'
+    !write(iulog,*)'MDF: now in lnd2atmType'
     begp = bounds%begp; endp = bounds%endp
 !--- MDF
 
@@ -172,9 +174,10 @@ contains
     allocate(this%ch4_surf_flux_tot_grc(begg:endg))          ; this%ch4_surf_flux_tot_grc(:) =ival
    !+++ MDF
    allocate(this%eflx_sh_tot_patch (begg:endg, 1:mxpft))    ; this%eflx_sh_tot_patch  (:,:) =missVal
-   allocate(this%eflx_lh_tot_patch (begg:endg, 1:mxpft))    ; this%eflx_lh_tot_patch  (:,:) =missVal
+   allocate(this%qflx_evap_tot_patch (begg:endg, 1:mxpft))  ; this%qflx_evap_tot_patch (:,:) =missVal
    allocate(this%fv_patch          (begg:endg, 1:mxpft))    ; this%fv_patch           (:,:) =missVal
    allocate(this%area_patch        (begg:endg, 1:mxpft))    ; this%area_patch         (:,:) =missVal
+   allocate(this%ts_patch          (begg:endg, 1:mxpft))    ; this%ts_patch           (:,:) =missVal
 
    !--- MDF
 

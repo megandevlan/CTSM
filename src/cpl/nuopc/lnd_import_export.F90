@@ -145,6 +145,7 @@ module lnd_import_export
   character(*), parameter :: Fl_lhflxPatch = 'Fl_lhflxPatch'
   character(*), parameter :: Sl_fvPatch    = 'Sl_fvPatch'
   character(*), parameter :: Sl_areaPatch  = 'Sl_areaPatch'
+  character(*), parameter :: Sl_tsPatch    = 'Sl_tsPatch'
 !--- MDF
 
   logical :: send_to_atm
@@ -218,8 +219,8 @@ contains
 !+++ MDF
     ! Determine number of patches 
     call get_proc_bounds(bounds)
-    write(iulog,*)'MDF: Maybe we got bounds okay - what is bound begp:',bounds%begp 
-    write(iulog,*)'MDF: This is the file name for fsurdat: ',fsurdat
+    !write(iulog,*)'MDF: Maybe we got bounds okay - what is bound begp:',bounds%begp 
+    !write(iulog,*)'MDF: This is the file name for fsurdat: ',fsurdat
     !call surfrd_get_num_patches(fsurdat, actual_maxsoil_patches, actual_numcft)
     !write(iulog,*)'MDF: This is the value of actual_maxsoil_patches:',actual_maxsoil_patches
     !npatch = maxsoil_patches
@@ -321,12 +322,13 @@ contains
        write(iulog,*)'MDF: This is in lnd_import_export... line 310'
        if (send_patch2atm) then ! send patch level data for use in CLASP+CLUBBMF
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_shflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
-          write(iulog,*)'MDF: This is the value of endp: ',bounds%endp
+          !write(iulog,*)'MDF: This is the value of endp: ',bounds%endp
           write(iulog,*)'MDF: Max number of PFTS, a cludge for now, set to',mxpft
 
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_lhflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_fvPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_areaPatch,  ungridded_lbound=1, ungridded_ubound=mxpft)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_tsPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
 
        end if
        !--- MDF
@@ -891,35 +893,44 @@ contains
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
 !+++ MDF
-       write(iulog,*)'MDF: Made it to line 877 in import_export!'
+       !write(iulog,*)'MDF: Made it to line 877 in import_export!'
        if (fldchk(exportState, Fl_shflxPatch)) then ! patch SHFLX from land 
           write(iulog,*)'MDF: And line 879, so the value of Fl_shflxPatch is good to go...'
           call state_setexport_2d(exportState, Fl_shflxPatch, lnd2atm_inst%eflx_sh_tot_patch(begg:,bounds%begp:), &
                init_spval=.false., minus = .true., rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of lnd2atm_inst_shTotPatch: ',lnd2atm_inst%eflx_sh_tot_patch(begg:,bounds%begp:bounds%endp)
-
+       !write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of lnd2atm_inst_shTotPatch: ',lnd2atm_inst%eflx_sh_tot_patch(begg:,bounds%begp:bounds%endp)
+ 
+       !+++ MDF 12/8/22: Need to update to use qflx_evap_tot_patch, not the lhflx itself; so also will need to add the waterfluxbulk_inst        
        if (fldchk(exportState, Fl_lhflxPatch)) then ! patch LHFLX from land 
-          call state_setexport_2d(exportState, Fl_lhflxPatch,lnd2atm_inst%eflx_lh_tot_patch(begg:,bounds%begp:), &
+          call state_setexport_2d(exportState, Fl_lhflxPatch, lnd2atm_inst%qflx_evap_tot_patch(begg:,bounds%begp:), &
                 init_spval=.false., minus = .true., rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of eflx_lh_tot_patch:',lnd2atm_inst%eflx_lh_tot_patch(begg:,bounds%begp:bounds%endp)
+       !write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of qflx_evap_tot_patch: ',lnd2atm_inst%qflx_evap_tot_patch(begg:,bounds%begp:bounds%endp)
 
        if (fldchk(exportState, Sl_fvPatch)) then ! patch ustar from land 
           call state_setexport_2d(exportState, Sl_fvPatch,lnd2atm_inst%fv_patch(begg:,bounds%begp:), &
                 init_spval=.false., rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of fv_patch:',lnd2atm_inst%fv_patch(begg:,bounds%begp:bounds%endp)
+       !write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of fv_patch:',lnd2atm_inst%fv_patch(begg:,bounds%begp:bounds%endp)
 
        if (fldchk(exportState, Sl_areaPatch)) then ! patch area from land 
           call state_setexport_2d(exportState, Sl_areaPatch,lnd2atm_inst%area_patch(begg:,bounds%begp:), &
                 init_spval=.false., rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end if
-       write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of area_patch:',lnd2atm_inst%area_patch(begg:,bounds%begp:bounds%endp)
+       !write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of area_patch:',lnd2atm_inst%area_patch(begg:,bounds%begp:bounds%endp)
+
+       if (fldchk(exportState, Sl_tsPatch)) then ! patch ts from land 
+          call state_setexport_2d(exportState, Sl_tsPatch,lnd2atm_inst%ts_patch(begg:,bounds%begp:), &
+                init_spval=.false., rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
+       !write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of ts_patch:',lnd2atm_inst%ts_patch(begg:,bounds%begp:bounds%endp)
+
 
 !---MDF
     endif

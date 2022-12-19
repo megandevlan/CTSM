@@ -162,6 +162,7 @@ contains
     !
     ! !USES:
     use ch4varcon  , only : ch4offline
+    use clm_varcon , only : sb
     !
     ! !ARGUMENTS:
     type(bounds_type)           , intent(in)    :: bounds  
@@ -354,14 +355,18 @@ contains
                   lnd2atm_inst%eflx_sh_ice_to_liq_col(c) - &
                   energyflux_inst%eflx_dynbal_grc(g)
 
-             lnd2atm_inst%eflx_lh_tot_patch(g,p) = &
-                  energyflux_inst%eflx_lh_tot_patch(p)
+             lnd2atm_inst%qflx_evap_tot_patch(g,p) = &
+                  water_inst%waterfluxbulk_inst%qflx_evap_tot_patch(p)
 
              lnd2atm_inst%fv_patch(g,p) = &
                   frictionvel_inst%fv_patch(p)
 
              lnd2atm_inst%area_patch(g,p) = &
                   patch%wtgcell(p)
+
+              ! 12/14/22 - new addition
+              lnd2atm_inst%ts_patch(g,p) = & 
+                   sqrt(sqrt(energyflux_inst%eflx_lwrad_out_patch(p)/sb))
 
              write(iulog,*)'MDF: this is the patch type and weight: ',patch%itype(p),patch%wtgcell(p)
           end do
