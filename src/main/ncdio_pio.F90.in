@@ -1353,7 +1353,7 @@ contains
     start(:) = 0
     count(:) = 0
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
 
@@ -1382,7 +1382,7 @@ contains
 #else
        if (varpresent) then
           allocate(idata1d(size(data)))
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
@@ -1478,7 +1478,7 @@ contains
     start(:) = 0
     count(:) = 0
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
 
@@ -1499,7 +1499,7 @@ contains
        end if
 #else
        if (varpresent) then
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
@@ -1648,7 +1648,7 @@ contains
   !-----------------------------------------------------------------------
 
   !TYPE int,double,logical
-  subroutine ncd_io_1d_{TYPE}(varname, data, dim1name, flag, ncid, nt, readvar, cnvrtnan2fill)
+  subroutine ncd_io_1d_{TYPE}(varname, data, dim1name, flag, ncid, nt, readvar, cnvrtnan2fill, posNOTonfile)
     !
     ! !DESCRIPTION:
     ! netcdf I/O for 1d
@@ -1662,6 +1662,7 @@ contains
     integer          , optional, intent(in)  :: nt            ! time sample index
     logical          , optional, intent(out) :: readvar       ! true => variable is on initial dataset (read only)
     logical          , optional, intent(in)  :: cnvrtnan2fill ! true => convert any NaN's to _FillValue (spval)
+    logical          , optional, intent(in)  :: posNOTonfile  ! Position is NOT on this file
     !
     ! Local Variables
     character(len=8)                 :: subgrid_level_name   ! nameg, namel, etc.
@@ -1676,6 +1677,7 @@ contains
     integer                          :: start(3)   ! netcdf start index
     integer                          :: count(3)   ! netcdf count index
     integer                          :: status     ! error code
+    logical                          :: found      ! if true, found lat/lon dims on file
     logical                          :: varpresent ! if true, variable is on tape
     integer                          :: xtype      ! type of var in file
     integer                , pointer :: idata(:)   ! Temporary integer data to send to file
@@ -1703,13 +1705,14 @@ contains
     end if
 #endif
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
           if (single_column) then
              start(:) = 1 ; count(:) = 1
-             call scam_field_offsets(ncid,subgrid_level_name,vardesc,start,count)
+             call scam_field_offsets(ncid,subgrid_level_name,vardesc,start,count, &
+                                     found=found, posNOTonfile=posNOTonfile)
              if (trim(subgrid_level_name) == grlnd) then
                 n=2
                 if (present(nt)) then
@@ -1823,7 +1826,7 @@ contains
 
   !TYPE int,double
   subroutine ncd_io_2d_{TYPE}(varname, data, dim1name, lowerb2, upperb2, &
-       flag, ncid, nt, readvar, switchdim, cnvrtnan2fill)
+       flag, ncid, nt, readvar, switchdim, cnvrtnan2fill, posNOTonfile )
     !
     ! !DESCRIPTION:
     ! Netcdf i/o of 2d
@@ -1839,7 +1842,7 @@ contains
     logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
     logical, optional, intent(in)  :: switchdim       ! true=> permute dim1 and dim2 for output
     logical, optional, intent(in)  :: cnvrtnan2fill   ! true => convert any NaN's to _FillValue (spval)
-    !
+    logical, optional, intent(in)  :: posNOTonfile    ! Position is NOT on this file    !
     ! !LOCAL VARIABLES:
 #if ({ITYPE}==TYPEINT)
     integer , pointer :: temp(:,:)
@@ -1863,6 +1866,7 @@ contains
     integer           :: lb1,lb2
     integer           :: ub1,ub2
     integer           :: xtype      ! netcdf type of variable on file
+    logical           :: found      ! if true, found lat/lon dims on file
 
     type(iodesc_plus_type) , pointer  :: iodesc_plus
     type(var_desc_t)                  :: vardesc
@@ -1898,22 +1902,40 @@ contains
        allocate(temp(lb2:ub2,lb1:ub1))
     end if
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              start(:) = 1 ; count(:) = 1
-             call scam_field_offsets(ncid, subgrid_level_name, vardesc, start, count)
+             status = pio_inq_varndims(ncid, vardesc, ndims)
+             call scam_field_offsets(ncid, subgrid_level_name, vardesc, start, count, &
+                                     found=found, posNOTonfile=posNOTonfile)
+             write(iulog,*)'varname=',trim(varname),'subgrid_level_name=',subgrid_level_name,' start=',start,' count=',count
              if (trim(subgrid_level_name) == grlnd) then
-                count(3) = size(data,dim=2)
-                n=3
+                if (present(switchdim)) then
+                   if (switchdim) then
+                      count(3) = size(temp,dim=2)
+                   else
+                      count(3) = size(data,dim=2)
+                   end if
+                else
+                   count(3) = size(data,dim=2)
+                end if
                 if (present(nt)) then
                    start(4) = nt; count(4) = 1
                    n=4
                 end if
              else
-                count(2) = size(data,dim=2)
+                if (present(switchdim)) then
+                   if (switchdim) then
+                      count(2) = size(temp,dim=2)
+                   else
+                      count(2) = size(data,dim=2)
+                   end if
+                else
+                   count(2) = size(data,dim=2)
+                end if
                 n=2
                 if (present(nt)) then
                    start(3) = nt ; count(3) = 1
@@ -1921,14 +1943,22 @@ contains
                 end if
              end if
              if (present(switchdim)) then
-                status = pio_get_var(ncid, vardesc, start(1:n), count(1:n), temp)
-                do j = lb2,ub2
-                   do i = lb1,ub1
-                      data(i,j) = temp(j,i)
+                if (switchdim) then
+                   if (ndims == 1) then
+                      write(iulog,*) trim(subname),' ERROR: dont know how to handle for switchdim'
+                      call shr_sys_abort(errMsg(sourcefile, __LINE__))
+                   end if
+                   status = pio_get_var(ncid, vardesc, start(1:n), count(1:n), temp)
+                   do j = lb2,ub2
+                      do i = lb1,ub1
+                         data(i,j) = temp(j,i)
+                      end do
                    end do
-                end do
+                else
+                   status = pio_get_var(ncid, vardesc, start(1:ndims), count(1:ndims), data)
+                endif
              else
-                status = pio_get_var(ncid, vardesc, start(1:n), count(1:n), data)
+                status = pio_get_var(ncid, vardesc, start(1:ndims), count(1:ndims), data)
              endif
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
@@ -2067,7 +2097,7 @@ contains
   !-----------------------------------------------------------------------
 
   !TYPE int,double
-  subroutine ncd_io_3d_{TYPE}(varname, data, dim1name, flag, ncid, nt, readvar)
+  subroutine ncd_io_3d_{TYPE}(varname, data, dim1name, flag, ncid, nt, readvar, posNOTonfile)
     !
     ! !DESCRIPTION:
     ! Netcdf i/o of 3d
@@ -2080,7 +2110,7 @@ contains
     character(len=*) , intent(in)  :: dim1name        ! dimension 1 name
     integer, optional, intent(in)  :: nt              ! time sample index
     logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
-    !
+    logical, optional, intent(in)  :: posNOTonfile ! Position is NOT on this file    !
     ! !LOCAL VARIABLES:
     integer                          :: ndim1,ndim2
     character(len=8)                 :: subgrid_level_name   ! nameg, namel, etc.
@@ -2108,14 +2138,14 @@ contains
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(subgrid_level_name)
     end if
 
-    if (flag == 'read') then
+    if (flag == 'read' .or. flag == 'read_noscm') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          if (single_column) then
+          if (single_column .and. flag == 'read') then
              start(:) = 1
              count(:) = 1
-             call scam_field_offsets(ncid, subgrid_level_name, vardesc, start, count)
+             call scam_field_offsets(ncid, subgrid_level_name, vardesc, start, count, posNOTonfile=posNOTonfile)
              if (trim(subgrid_level_name) == grlnd) then
                 count(3) = size(data,dim=2);
                 count(4) = size(data,dim=3)
