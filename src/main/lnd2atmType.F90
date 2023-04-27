@@ -67,6 +67,7 @@ module lnd2atmType
      real(r8), pointer :: fv_patch          (:,:) => null() ! ustar per patch (friction velocity [m/s])    
      real(r8), pointer :: area_patch        (:,:) => null() ! grid area per patch (fraction)    
      real(r8), pointer :: ts_patch          (:,:) => null() ! Ts per patch     
+     real(r8), pointer :: lun_patch         (:,:) => null() ! landunit of each patch  
 
 !--- MDF 
      ! lnd->rof
@@ -178,7 +179,7 @@ contains
    allocate(this%fv_patch          (begg:endg, 1:mxpft))    ; this%fv_patch           (:,:) =missVal
    allocate(this%area_patch        (begg:endg, 1:mxpft))    ; this%area_patch         (:,:) =missVal
    allocate(this%ts_patch          (begg:endg, 1:mxpft))    ; this%ts_patch           (:,:) =missVal
-
+   allocate(this%lun_patch         (begg:endg, 1:mxpft))    ; this%lun_patch          (:,:) =missVal
    !--- MDF
 
     if (shr_megan_mechcomps_n>0) then

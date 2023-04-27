@@ -146,6 +146,7 @@ module lnd_import_export
   character(*), parameter :: Sl_fvPatch    = 'Sl_fvPatch'
   character(*), parameter :: Sl_areaPatch  = 'Sl_areaPatch'
   character(*), parameter :: Sl_tsPatch    = 'Sl_tsPatch'
+  character(*), parameter :: Sl_lunPatch  = 'Sl_lunPatch'
 !--- MDF
 
   logical :: send_to_atm
@@ -329,7 +330,7 @@ contains
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_fvPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_areaPatch,  ungridded_lbound=1, ungridded_ubound=mxpft)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_tsPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
-
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_lunPatch,   ungridded_lbound=1, ungridded_ubound=mxpft)
        end if
        !--- MDF
     end if
@@ -931,6 +932,11 @@ contains
        end if
        !write(iulog,*)'MDF: Maybe we filled in the patch data! This is the value of ts_patch:',lnd2atm_inst%ts_patch(begg:,bounds%begp:bounds%endp)
 
+       if (fldchk(exportState, Sl_lunPatch)) then ! patch landunit from land 
+          call state_setexport_2d(exportState, Sl_lunPatch,lnd2atm_inst%lun_patch(begg:,bounds%begp:), &
+                init_spval=.false., rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end if
 
 !---MDF
     endif
