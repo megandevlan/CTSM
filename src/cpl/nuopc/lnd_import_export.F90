@@ -320,11 +320,10 @@ contains
           call fldlist_add(fldsFrLnd_num, fldsFrlnd, Sl_soilw) ! optional for carma
        end if
        !+++ MDF
-       write(iulog,*)'MDF: This is in lnd_import_export... line 310'
        if (send_patch2atm) then ! send patch level data for use in CLASP+CLUBBMF
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_shflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
           !write(iulog,*)'MDF: This is the value of endp: ',bounds%endp
-          write(iulog,*)'MDF: Max number of PFTS, a cludge for now, set to',mxpft
+          !write(iulog,*)'MDF: Max number of PFTS, a cludge for now, set to',mxpft
 
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_lhflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
           call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_fvPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
@@ -896,7 +895,6 @@ contains
 !+++ MDF
        !write(iulog,*)'MDF: Made it to line 877 in import_export!'
        if (fldchk(exportState, Fl_shflxPatch)) then ! patch SHFLX from land 
-          write(iulog,*)'MDF: And line 879, so the value of Fl_shflxPatch is good to go...'
           call state_setexport_2d(exportState, Fl_shflxPatch, lnd2atm_inst%eflx_sh_tot_patch(begg:,bounds%begp:), &
                init_spval=.false., minus = .true., rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return

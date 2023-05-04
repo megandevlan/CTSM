@@ -371,7 +371,7 @@ contains
               ! 4/21/23 - new addition 
               lnd2atm_inst%lun_patch(g,p) = lun%itype(patch%landunit(p))
 
-             write(iulog,*)'MDF: this is the patch type and weight: ',patch%itype(p),patch%wtgcell(p)
+             !write(iulog,*)'MDF: this is the patch type and weight: ',patch%itype(p),patch%wtgcell(p)
           end do
        end do
     end do
