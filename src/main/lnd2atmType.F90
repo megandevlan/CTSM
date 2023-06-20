@@ -13,6 +13,7 @@ module lnd2atmType
   !use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
 !+++ MDF
   use clm_varpar    , only : numrad, ndst, nlevgrnd,maxsoil_patches,mxpft !ndst = number of dust bins. 
+  use clm_varpar    , only: maxpatch_urb, maxunit_urb, maxunit_other
 !--- MDF
   use clm_varcon    , only : spval
   use clm_varctl    , only : iulog, use_lch4
@@ -143,6 +144,7 @@ contains
 !+++ MDF
     real(r8) :: missVal = 9999 ! missing value to initialize patch data
     integer  :: begp, endp
+    integer  :: maxPatchVals 
 !--- MDF
     !------------------------------------------------------------------------
 
@@ -151,6 +153,8 @@ contains
 !+++ MDF
     !write(iulog,*)'MDF: now in lnd2atmType'
     begp = bounds%begp; endp = bounds%endp
+    maxPatchVals = mxpft + maxunit_other + (maxpatch_urb * maxunit_urb)+1
+    !write(iulog,*)'MDF: value of maxPatchVals = ',maxPatchVals 
 !--- MDF
 
     allocate(this%t_rad_grc          (begg:endg))            ; this%t_rad_grc          (:)   =ival
@@ -174,12 +178,12 @@ contains
     allocate(this%flxdst_grc         (begg:endg,1:ndst))     ; this%flxdst_grc         (:,:) =ival
     allocate(this%ch4_surf_flux_tot_grc(begg:endg))          ; this%ch4_surf_flux_tot_grc(:) =ival
    !+++ MDF
-   allocate(this%eflx_sh_tot_patch (begg:endg, 1:mxpft))    ; this%eflx_sh_tot_patch  (:,:) =missVal
-   allocate(this%qflx_evap_tot_patch (begg:endg, 1:mxpft))  ; this%qflx_evap_tot_patch (:,:) =missVal
-   allocate(this%fv_patch          (begg:endg, 1:mxpft))    ; this%fv_patch           (:,:) =missVal
-   allocate(this%area_patch        (begg:endg, 1:mxpft))    ; this%area_patch         (:,:) =missVal
-   allocate(this%ts_patch          (begg:endg, 1:mxpft))    ; this%ts_patch           (:,:) =missVal
-   allocate(this%lun_patch         (begg:endg, 1:mxpft))    ; this%lun_patch          (:,:) =missVal
+   allocate(this%eflx_sh_tot_patch (begg:endg, 1:maxPatchVals))    ; this%eflx_sh_tot_patch  (:,:) =missVal
+   allocate(this%qflx_evap_tot_patch (begg:endg, 1:maxPatchVals))  ; this%qflx_evap_tot_patch (:,:) =missVal
+   allocate(this%fv_patch          (begg:endg, 1:maxPatchVals))    ; this%fv_patch           (:,:) =missVal
+   allocate(this%area_patch        (begg:endg, 1:maxPatchVals))    ; this%area_patch         (:,:) =missVal
+   allocate(this%ts_patch          (begg:endg, 1:maxPatchVals))    ; this%ts_patch           (:,:) =missVal
+   allocate(this%lun_patch         (begg:endg, 1:maxPatchVals))    ; this%lun_patch          (:,:) =missVal
    !--- MDF
 
     if (shr_megan_mechcomps_n>0) then

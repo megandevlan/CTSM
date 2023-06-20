@@ -13,6 +13,7 @@ module lnd2atmMod
   use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevmaxurbgrnd !ndst = number of dust bins.
   !+++ MDF 
   use PatchType            , only : patch
+  use clm_varpar           , only: mxpft,maxpatch_urb, maxunit_urb, maxunit_other
   !--- MDF
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_lch4
@@ -185,7 +186,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c, g  ! indices
 !+++ MDF 
-    integer  :: p  ! indices
+    integer  :: p,saveP  ! indices
 !--- MDF
     real(r8) :: eflx_sh_ice_to_liq_grc(bounds%begg:bounds%endg) ! sensible heat flux generated from the ice to liquid conversion, averaged to gridcell
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
@@ -348,30 +349,60 @@ contains
     !write(iulog,*)'MDF: Hey look, you made it this far: line 345'
     do g = bounds%begg,bounds%endg
        do c = bounds%begc,bounds%endc
-          do p = bounds%begp,bounds%endp
-             lnd2atm_inst%eflx_sh_tot_patch(g,p) = &
-                  energyflux_inst%eflx_sh_tot_patch(p) + &
-                  energyflux_inst%eflx_sh_precip_conversion_col(c) + &
-                  lnd2atm_inst%eflx_sh_ice_to_liq_col(c) - &
-                  energyflux_inst%eflx_dynbal_grc(g)
+          !write(iulog,*)'MDF : lnd2atmMod ln351 ... value of bounds%begp, bounds%endp = ',bounds%begp, bounds%endp
 
-             lnd2atm_inst%qflx_evap_tot_patch(g,p) = &
-                  water_inst%waterfluxbulk_inst%qflx_evap_tot_patch(p)
+        do p = bounds%begp,bounds%endp
+             !write(iulog,*)'MDF: lnd2atmMod ln352 ... value of p  = ',p
+             !write(iulog,*)'MDF: lnd2atmMod ln354 ... value of patch(p) = ',patch%itype(p)
+             !write(iulog,*)'MDF: lnd2atmMod ln354 ... value of col(p) = ',patch%column(p)
+             !write(iulog,*)'MDF: lnd2atmMod ln354 ... value of lun(p) = ',patch%landunit(p)
+ 
+             if ((patch%landunit(p)==1) .or. (patch%landunit(p)==2)) then 
+                saveP = patch%itype(p)+1
+             elseif (patch%landunit(p)==4) then   ! land ice  
+                saveP = mxpft+2
+             elseif (patch%landunit(p)==5) then   ! lake 
+                saveP = mxpft+3
+             elseif (patch%landunit(p)==6) then   ! wetland 
+                saveP = mxpft+4
+             elseif (patch%landunit(p)==7) then   ! urban tbd
+                saveP = mxpft+5+(patch%column(p)-71)
+             elseif (patch%landunit(p)==8) then   ! urban hd 
+                saveP = mxpft+10+(patch%column(p)-71)
+             elseif (patch%landunit(p)==9) then   ! urban md
+                saveP = mxpft+15+(patch%column(p)-71)
+             else  
+                !write(iulog,*)'MDF: There is not a landunit type matched....'
+                saveP = 0
+             endif
+             !write(iulog,*)'MDF: lnd2atmMod ln375 ... value of saveP = ',saveP 
+             
+             if (saveP > 0) then 
+                lnd2atm_inst%eflx_sh_tot_patch(g,saveP) = &
+                     energyflux_inst%eflx_sh_tot_patch(p) + &
+                     energyflux_inst%eflx_sh_precip_conversion_col(c) + &
+                     lnd2atm_inst%eflx_sh_ice_to_liq_col(c) - &
+                     energyflux_inst%eflx_dynbal_grc(g)
 
-             lnd2atm_inst%fv_patch(g,p) = &
-                  frictionvel_inst%fv_patch(p)
+                lnd2atm_inst%qflx_evap_tot_patch(g,saveP) = &
+                     water_inst%waterfluxbulk_inst%qflx_evap_tot_patch(p)
 
-             lnd2atm_inst%area_patch(g,p) = &
-                  patch%wtgcell(p)
+                lnd2atm_inst%fv_patch(g,saveP) = &
+                     frictionvel_inst%ustar_patch(p)
+                     !frictionvel_inst%fv_patch(p)
 
-              ! 12/14/22 - new addition
-              lnd2atm_inst%ts_patch(g,p) = & 
-                   sqrt(sqrt(energyflux_inst%eflx_lwrad_out_patch(p)/sb))
+                lnd2atm_inst%area_patch(g,saveP) = &
+                     patch%wtgcell(p)
 
-              ! 4/21/23 - new addition 
-              lnd2atm_inst%lun_patch(g,p) = lun%itype(patch%landunit(p))
+                 ! 12/14/22 - new addition
+                 lnd2atm_inst%ts_patch(g,saveP) = & 
+                      sqrt(sqrt(energyflux_inst%eflx_lwrad_out_patch(p)/sb))
 
-             !write(iulog,*)'MDF: this is the patch type and weight: ',patch%itype(p),patch%wtgcell(p)
+                 ! 4/21/23 - new addition 
+                 lnd2atm_inst%lun_patch(g,saveP) = lun%itype(patch%landunit(p))
+
+                !write(iulog,*)'MDF: this is the patch type and weight: ',patch%itype(p),patch%wtgcell(p)
+             endif
           end do
        end do
     end do

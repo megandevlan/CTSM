@@ -173,7 +173,7 @@ contains
     !+++ MDF 
     use clm_varctl        , only: fsurdat
     use surfrdMod         , only: surfrd_get_num_patches
-    use clm_varpar        , only : mxpft,maxsoil_patches
+    use clm_varpar        , only : mxpft,maxpatch_urb, maxunit_urb, maxunit_other
     !--- MDF
 
     ! input/output variables
@@ -196,6 +196,7 @@ contains
 !+++ MDF
     integer           :: actual_maxsoil_patches  ! value from surface dataset 
     integer           :: actual_numcft  ! numcft from sfc dataset
+    integer           :: maxPatchVals   ! Size of patch-level data arrays
     type(bounds_type)      :: bounds                          ! bounds
 !--- MDF
 
@@ -320,16 +321,18 @@ contains
           call fldlist_add(fldsFrLnd_num, fldsFrlnd, Sl_soilw) ! optional for carma
        end if
        !+++ MDF
+       maxPatchVals = mxpft + maxunit_other + (maxpatch_urb * maxunit_urb)+1
+
        if (send_patch2atm) then ! send patch level data for use in CLASP+CLUBBMF
-          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_shflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_shflxPatch, ungridded_lbound=1, ungridded_ubound=maxPatchVals)
           !write(iulog,*)'MDF: This is the value of endp: ',bounds%endp
           !write(iulog,*)'MDF: Max number of PFTS, a cludge for now, set to',mxpft
 
-          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_lhflxPatch, ungridded_lbound=1, ungridded_ubound=mxpft)
-          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_fvPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
-          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_areaPatch,  ungridded_lbound=1, ungridded_ubound=mxpft)
-          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_tsPatch,    ungridded_lbound=1, ungridded_ubound=mxpft)
-          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_lunPatch,   ungridded_lbound=1, ungridded_ubound=mxpft)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Fl_lhflxPatch, ungridded_lbound=1, ungridded_ubound=maxPatchVals)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_fvPatch,    ungridded_lbound=1, ungridded_ubound=maxPatchVals)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_areaPatch,  ungridded_lbound=1, ungridded_ubound=maxPatchVals)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_tsPatch,    ungridded_lbound=1, ungridded_ubound=maxPatchVals)
+          call fldlist_add(fldsFrLnd_num, fldsFrLnd, Sl_lunPatch,   ungridded_lbound=1, ungridded_ubound=maxPatchVals)
        end if
        !--- MDF
     end if

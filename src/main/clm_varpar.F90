@@ -59,6 +59,11 @@ module clm_varpar
   integer, public :: maxveg           ! # of pfts + cfts
   integer, public :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
 
+  ! +++ MDF -- define extra constants for use in passing patch data to CAM 
+  integer, public :: maxunit_urb= 3       ! max number of urban landunits 
+  integer, public :: maxunit_other=3      ! max nubmer of other landunits to be aware of (ice, lake, and wetland)
+  ! --- MDF 
+
   integer, public :: maxsoil_patches  ! # of pfts + cfts + bare ground; replaces maxpatch_pft, which is obsolete
 
   ! constants for decomposition cascade
