@@ -329,7 +329,8 @@ contains
 
     eflx_building     => energyflux_inst%eflx_building_lun , & ! Output:  [real(r8) (:)]  building heat flux from change in interior building air temperature (W/m**2)
     eflx_urban_ac     => energyflux_inst%eflx_urban_ac_lun , & ! Output:  [real(r8) (:)]  urban air conditioning flux (W/m**2)
-    eflx_urban_heat   => energyflux_inst%eflx_urban_heat_lun & ! Output:  [real(r8) (:)]  urban heating flux (W/m**2)
+    eflx_urban_heat   => energyflux_inst%eflx_urban_heat_lun,& ! Output:  [real(r8) (:)]  urban heating flux (W/m**2)
+    eflx_ventilation  => energyflux_inst%eflx_ventilation_lun & ! Output: [real(r8) (:)]  sensible heat flux from building ventilation (W/m**2)
     )
 
     ! Get step size
@@ -382,9 +383,11 @@ contains
 
     ! Get terms from soil temperature equations to compute conduction flux
     ! Negative is toward surface - heat added
-    ! Note that the conduction flux here is in W m-2 wall area but for purposes of solving the set of
-    ! simultaneous equations this must be converted to W m-2 floor area. This is done below when 
-    ! setting up the equation coefficients.
+    ! Note that the convection and conduction fluxes for the walls are in W m-2 wall area 
+    ! but for purposes of solving the set of simultaneous equations this must be converted to W m-2 
+    ! floor or roof area. This is done below when setting up the equation coefficients by multiplying by building_hwr.
+    ! Note also that the longwave radiation terms for the walls are in terms of W m-2 floor area since the view
+    ! factors implicitly convert from per unit wall area to per unit floor or roof area.
 
     do fc = 1,num_nolakec
        c = filter_nolakec(fc)
@@ -423,10 +426,8 @@ contains
          ! This view factor implicitly converts from per unit wall area to per unit floor area
          vf_wf(l)  = 0.5_r8*(1._r8 - vf_rf(l))
 
-         ! This view factor implicitly converts from per unit floor area to per unit wall area
-         vf_fw(l) = vf_wf(l) / building_hwr(l)
+         vf_fw(l) = vf_wf(l)
 
-         ! This view factor implicitly converts from per unit roof area to per unit wall area
          vf_rw(l)  = vf_fw(l)
 
          ! This view factor implicitly converts from per unit wall area to per unit roof area
@@ -830,7 +831,7 @@ contains
                         + em_floori(l)*sb*t_floor_bef(l)**4._r8 &
                         + 4._r8*em_floori(l)*sb*t_floor_bef(l)**3.*(t_floor(l) - t_floor_bef(l))
 
-         qrd_building(l) = qrd_roof(l) + building_hwr(l)*(qrd_sunw(l) + qrd_shdw(l)) + qrd_floor(l)
+         qrd_building(l) = qrd_roof(l) + qrd_sunw(l) + qrd_shdw(l) + qrd_floor(l)
 
          if (abs(qrd_building(l)) > .10_r8 ) then
            write (iulog,*) 'urban inside building net longwave radiation balance error ',qrd_building(l)
@@ -899,6 +900,14 @@ contains
            write (iulog,*) 'clm model is stopping'
            call endrun(subgrid_index=l, subgrid_level=subgrid_level_landunit)
          end if
+
+         ! Sensible heat flux from ventilation. It is added as a flux to the canyon floor in SoilTemperatureMod.
+         ! Note that we multiply it here by wtlunit_roof which converts it from W/m2 of building area to W/m2
+         ! of urban area. eflx_urban_ac and eflx_urban_heat are treated similarly below. This flux is balanced
+         ! by an equal and opposite flux into/out of the building and so has a net effect of zero on the energy balance
+         ! of the urban landunit.
+         eflx_ventilation(l) = wtlunit_roof(l) * ( - ht_roof(l)*(vent_ach/3600._r8) &
+                               * rho_dair(l) * cpair * (taf(l) - t_building(l)) )
        end if
     end do
 

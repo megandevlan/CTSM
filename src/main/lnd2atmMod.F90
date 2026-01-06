@@ -18,9 +18,9 @@ module lnd2atmMod
   !--- MDF
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_lch4
-  use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
+  use shr_drydep_mod       , only : n_drydep
   use decompMod            , only : bounds_type
-  use subgridAveMod        , only : p2g, c2g
+  use subgridAveMod        , only : p2g, c2g, l2g
   use filterColMod         , only : filter_col_type, col_filter_from_logical_array
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
@@ -40,7 +40,7 @@ module lnd2atmMod
   use glc2lndMod           , only : glc2lnd_type
   use ColumnType           , only : col
   use LandunitType         , only : lun
-  use GridcellType         , only : grc                
+  use GridcellType         , only : grc
   use landunit_varcon      , only : istice
   !
   ! !PUBLIC TYPES:
@@ -74,11 +74,11 @@ contains
     use clm_varcon, only : sb
     !
     ! !ARGUMENTS:
-    type(bounds_type)     , intent(in)    :: bounds  
+    type(bounds_type)     , intent(in)    :: bounds
     type(water_type)      , intent(inout) :: water_inst
     type(surfalb_type)    , intent(in)    :: surfalb_inst
     type(energyflux_type) , intent(in)    :: energyflux_inst
-    type(lnd2atm_type)    , intent(inout) :: lnd2atm_inst 
+    type(lnd2atm_type)    , intent(inout) :: lnd2atm_inst
     !
     ! !LOCAL VARIABLES:
     integer  :: i,g                                   ! index
@@ -157,7 +157,7 @@ contains
        energyflux_inst, solarabs_inst, drydepvel_inst,  &
        vocemis_inst, fireemis_inst, dust_inst, ch4_inst, glc_behavior, &
        lnd2atm_inst, &
-       net_carbon_exchange_grc) 
+       net_carbon_exchange_grc)
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_inst component of gridcell derived type
@@ -165,9 +165,10 @@ contains
     ! !USES:
     use ch4varcon  , only : ch4offline
     use clm_varcon , only : sb
+    use clm_varctl , only : use_hillslope_routing
     !
     ! !ARGUMENTS:
-    type(bounds_type)           , intent(in)    :: bounds  
+    type(bounds_type)           , intent(in)    :: bounds
     type(atm2lnd_type)          , intent(in)    :: atm2lnd_inst
     type(surfalb_type)          , intent(in)    :: surfalb_inst
     type(temperature_type)      , intent(in)    :: temperature_inst
@@ -181,7 +182,7 @@ contains
     type(dust_type)             , intent(in)    :: dust_inst
     type(ch4_type)              , intent(in)    :: ch4_inst
     type(glc_behavior_type)     , intent(in)    :: glc_behavior
-    type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst 
+    type(lnd2atm_type)          , intent(inout) :: lnd2atm_inst
     real(r8)                    , intent(in)    :: net_carbon_exchange_grc( bounds%begg: )  ! net carbon exchange between land and atmosphere, positive for source (gC/m2/s)
     !
     ! !LOCAL VARIABLES:
@@ -195,6 +196,9 @@ contains
 
 !--- MDF
     real(r8) :: eflx_sh_ice_to_liq_grc(bounds%begg:bounds%endg) ! sensible heat flux generated from the ice to liquid conversion, averaged to gridcell
+    real(r8), allocatable :: qflx_surf_col_to_rof(:)          ! surface runoff that is sent directly to rof
+    real(r8), allocatable :: qflx_drain_col_to_rof(:)         ! drainagec that is sent directly to rof
+    real(r8), allocatable :: qflx_drain_perched_col_to_rof(:) ! perched drainage that is sent directly to rof
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
@@ -213,10 +217,6 @@ contains
     !----------------------------------------------------
     ! lnd -> atm
     !----------------------------------------------------
-
-    !+++MDF 
-    !write(iulog,*)'MDF: now in lnd2atmMod'
-    !---MDF
 
     ! First, compute the "minimal" set of fields.
     call lnd2atm_minimal(bounds, &
@@ -288,7 +288,7 @@ contains
        lnd2atm_inst%eflx_sh_tot_grc(g) =  lnd2atm_inst%eflx_sh_tot_grc(g) + &
             lnd2atm_inst%eflx_sh_precip_conversion_grc(g) + &
             eflx_sh_ice_to_liq_grc(g) - &
-            energyflux_inst%eflx_dynbal_grc(g) 
+            energyflux_inst%eflx_dynbal_grc(g)
     enddo
 
     call p2g(bounds, &
@@ -317,7 +317,7 @@ contains
     end do
 
     ! drydepvel
-    if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
+    if ( n_drydep > 0 ) then
        call p2g(bounds, n_drydep, &
             drydepvel_inst%velocity_patch (bounds%begp:bounds%endp, :), &
             lnd2atm_inst%ddvel_grc        (bounds%begg:bounds%endg, :), &
@@ -462,15 +462,80 @@ contains
     ! lnd -> rof
     !----------------------------------------------------
 
-    call c2g( bounds, &
-         water_inst%waterfluxbulk_inst%qflx_surf_col (bounds%begc:bounds%endc), &
-         water_inst%waterlnd2atmbulk_inst%qflx_rofliq_qsur_grc   (bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+    if (use_hillslope_routing) then
+       ! streamflow is volume/time, so sum over landunits (do not weight)
+       water_inst%waterlnd2atmbulk_inst%qflx_rofliq_stream_grc(bounds%begg:bounds%endg) = 0._r8
+       do l = bounds%begl, bounds%endl
+          if(lun%active(l)) then
+             g = lun%gridcell(l)
+             water_inst%waterlnd2atmbulk_inst%qflx_rofliq_stream_grc(g) = &
+                  water_inst%waterlnd2atmbulk_inst%qflx_rofliq_stream_grc(g) &
+                  +  water_inst%waterfluxbulk_inst%volumetric_streamflow_lun(l) &
+                  *1e3_r8/(grc%area(g)*1.e6_r8)
+          endif
+       enddo
 
-    call c2g( bounds, &
-         water_inst%waterfluxbulk_inst%qflx_drain_col (bounds%begc:bounds%endc), &
-         water_inst%waterlnd2atmbulk_inst%qflx_rofliq_qsub_grc   (bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+       ! If hillslope routing is used, exclude inputs to stream channel from gridcell averages to avoid double counting
+       allocate( &
+            qflx_surf_col_to_rof(bounds%begc:bounds%endc), &
+            qflx_drain_col_to_rof(bounds%begc:bounds%endc), &
+            qflx_drain_perched_col_to_rof(bounds%begc:bounds%endc))
+
+       qflx_surf_col_to_rof(bounds%begc:bounds%endc)  = 0._r8
+       qflx_drain_col_to_rof(bounds%begc:bounds%endc) = 0._r8
+       qflx_drain_perched_col_to_rof(bounds%begc:bounds%endc) = 0._r8
+       
+       do c = bounds%begc, bounds%endc
+          ! Exclude hillslope columns from gridcell average
+          ! hillslope runoff is sent to stream rather than directly
+          ! to rof, and is accounted for in qflx_rofliq_stream_grc
+          if (col%active(c) .and. .not. col%is_hillslope_column(c)) then
+             qflx_surf_col_to_rof(c) = qflx_surf_col_to_rof(c) &
+                  + water_inst%waterfluxbulk_inst%qflx_surf_col(c)
+             qflx_drain_col_to_rof(c) = qflx_drain_col_to_rof(c) &
+                  + water_inst%waterfluxbulk_inst%qflx_drain_col(c)
+             qflx_drain_perched_col_to_rof(c) = &
+                  qflx_drain_perched_col_to_rof(c) &
+                  + water_inst%waterfluxbulk_inst%qflx_drain_perched_col(c)
+          endif
+       enddo
+          
+       call c2g( bounds, &
+            qflx_surf_col_to_rof  (bounds%begc:bounds%endc), &
+            water_inst%waterlnd2atmbulk_inst%qflx_rofliq_qsur_grc   (bounds%begg:bounds%endg), &
+            c2l_scale_type= 'urbanf', l2g_scale_type='unity')
+       
+       call c2g( bounds, &
+            qflx_drain_col_to_rof (bounds%begc:bounds%endc), &
+            water_inst%waterlnd2atmbulk_inst%qflx_rofliq_qsub_grc   (bounds%begg:bounds%endg), &
+            c2l_scale_type= 'urbanf', l2g_scale_type='unity')
+       
+       call c2g( bounds, &
+            qflx_drain_perched_col_to_rof (bounds%begc:bounds%endc), &
+            water_inst%waterlnd2atmbulk_inst%qflx_rofliq_drain_perched_grc(bounds%begg:bounds%endg), &
+            c2l_scale_type= 'urbanf', l2g_scale_type='unity')
+       
+       deallocate(qflx_surf_col_to_rof,qflx_drain_col_to_rof, &
+            qflx_drain_perched_col_to_rof)
+
+    else
+    
+       call c2g( bounds, &
+            water_inst%waterfluxbulk_inst%qflx_surf_col (bounds%begc:bounds%endc), &
+            water_inst%waterlnd2atmbulk_inst%qflx_rofliq_qsur_grc   (bounds%begg:bounds%endg), &
+            c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+       
+       call c2g( bounds, &
+            water_inst%waterfluxbulk_inst%qflx_drain_col (bounds%begc:bounds%endc), &
+            water_inst%waterlnd2atmbulk_inst%qflx_rofliq_qsub_grc   (bounds%begg:bounds%endg), &
+            c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+       
+       call c2g( bounds, &
+            water_inst%waterfluxbulk_inst%qflx_drain_perched_col (bounds%begc:bounds%endc), &
+            water_inst%waterlnd2atmbulk_inst%qflx_rofliq_drain_perched_grc(bounds%begg:bounds%endg), &
+            c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
+    endif
 
     do c = bounds%begc, bounds%endc
        if (col%active(c)) then
@@ -510,19 +575,13 @@ contains
     enddo
 
     call c2g( bounds, &
-         water_inst%waterfluxbulk_inst%qflx_drain_perched_col (bounds%begc:bounds%endc), &
-         water_inst%waterlnd2atmbulk_inst%qflx_rofliq_drain_perched_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-
-
-    call c2g( bounds, &
          water_inst%waterfluxbulk_inst%qflx_sfc_irrig_col (bounds%begc:bounds%endc), &
          water_inst%waterlnd2atmbulk_inst%qirrig_grc(bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     call c2g( bounds, &
          water_inst%waterlnd2atmbulk_inst%qflx_ice_runoff_col(bounds%begc:bounds%endc),  &
-         water_inst%waterlnd2atmbulk_inst%qflx_rofice_grc(bounds%begg:bounds%endg),  & 
+         water_inst%waterlnd2atmbulk_inst%qflx_rofice_grc(bounds%begg:bounds%endg),  &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
     do g = bounds%begg, bounds%endg
        water_inst%waterlnd2atmbulk_inst%qflx_rofice_grc(g) = &

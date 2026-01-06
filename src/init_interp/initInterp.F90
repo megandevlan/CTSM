@@ -40,7 +40,7 @@ module initInterpMod
 
   ! Private methods
 
-  private :: copy_metadata
+  private :: copy_and_add_metadata
   private :: check_dim_subgrid
   private :: check_dim_level
   private :: skip_var
@@ -226,7 +226,7 @@ contains
     !--------------------------------------------------------------------
 
     if (masterproc) then
-       write (iulog,*) '**** Mapping clm initial data from input ',trim(filei),&
+       write (iulog,'(a)') '**** Mapping clm initial data from input '//trim(filei)//&
             '  to output ',trim(fileo),' ****'
     end if
 
@@ -237,7 +237,7 @@ contains
     call ncd_pio_openfile (ncidi, trim(filei) , 0)
     call ncd_pio_openfile (ncido, trim(fileo),  ncd_write)
 
-    call copy_metadata(ncidi, ncido)
+    call copy_and_add_metadata(ncidi, ncido, filei)
 
     call check_interp_non_ciso_to_ciso(ncidi)
 
@@ -732,7 +732,7 @@ contains
   end subroutine initInterp
 
   !-----------------------------------------------------------------------
-  subroutine copy_metadata(ncidi, ncido)
+  subroutine copy_and_add_metadata(ncidi, ncido, filei)
     !
     ! !DESCRIPTION:
     ! Copy any necessary global metadata from the input file to the output file
@@ -740,18 +740,19 @@ contains
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncidi ! input (source) file
     type(file_desc_t), intent(inout) :: ncido ! output (destination) file
+    character(len=*) , intent(in)    :: filei ! input (source) filename
+
     !
     ! !LOCAL VARIABLES:
-
-    character(len=*), parameter :: subname = 'copy_metadata'
+    character(len=*), parameter :: subname = 'copy_and_add_metadata'
     !-----------------------------------------------------------------------
 
     call ncd_redef(ncido)
+    call ncd_putatt(ncido, ncd_global, 'initial_source_file', trim(filei))
     call copy_issue_fixed_metadata(ncidi, ncido)
     call ncd_enddef(ncido)
 
-  end subroutine copy_metadata
-
+  end subroutine copy_and_add_metadata
 
   !-----------------------------------------------------------------------
   function skip_var(iflag_interpinic)
